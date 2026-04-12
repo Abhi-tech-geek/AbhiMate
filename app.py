@@ -46,6 +46,46 @@ def get_session(session_id):
     with open(path, "r", encoding="utf-8") as f:
         return jsonify(json.load(f))
 
+@app.route("/api/global_metrics", methods=["GET"])
+def get_global_metrics():
+    """Aggregates all execution data globally from sessions"""
+    total_tests = 0
+    total_passed = 0
+    total_failed = 0
+    reports = []
+    
+    for filepath in glob.glob(os.path.join(SESSION_DIR, "*.json")):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+                # Check if it was executed and has metrics
+                if data.get("state") == "EXECUTED" and "metrics" in data:
+                    metrics = data["metrics"]
+                    total_tests += metrics.get("total", 0)
+                    total_passed += metrics.get("passed", 0)
+                    total_failed += metrics.get("failed", 0)
+                    
+                    reports.append({
+                        "session_id": data.get("session_id"),
+                        "feature": data.get("feature"),
+                        "passed": metrics.get("passed", 0),
+                        "failed": metrics.get("failed", 0),
+                        "summary": data.get("executive_summary", "No summary.")
+                    })
+        except Exception:
+            pass
+
+    return jsonify({
+        "aggregated_metrics": {
+            "total_tests": total_tests,
+            "total_passed": total_passed,
+            "total_failed": total_failed,
+            "pass_rate": round((total_passed / total_tests * 100), 2) if total_tests > 0 else 0
+        },
+        "historical_reports": reports
+    })
+
 @app.route("/api/generate", methods=["POST"])
 def generate_tests():
     data = request.json

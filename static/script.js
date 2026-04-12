@@ -1,7 +1,18 @@
 let currentSessionId = null;
 
 // DOM Elements
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebarExpand = document.getElementById('sidebarExpand');
+
 const newSessionBtn = document.getElementById('newSessionBtn');
+const navDashboard = document.getElementById('navDashboard');
+const navReports = document.getElementById('navReports');
+
+const chatWindow = document.getElementById('chatWindow');
+const globalDashboardView = document.getElementById('globalDashboardView');
+const inputContainer = document.getElementById('inputContainer');
+
 const historyList = document.getElementById('historyList');
 const promptInput = document.getElementById('promptInput');
 const sendPromptBtn = document.getElementById('sendPromptBtn');
@@ -14,9 +25,80 @@ const triggerAutomationBtn = document.getElementById('triggerAutomationBtn');
 const saveManualBtn = document.getElementById('saveManualBtn');
 const executionResultsArea = document.getElementById('executionResultsArea');
 
-document.addEventListener('DOMContentLoaded', loadSessions);
+document.addEventListener('DOMContentLoaded', () => {
+    loadSessions();
+    loadGlobalMetrics();
+});
 
-newSessionBtn.addEventListener('click', resetChat);
+// Sidebar Toggle Logic
+sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.add('collapsed');
+    sidebarExpand.classList.remove('hidden');
+});
+sidebarExpand.addEventListener('click', () => {
+    sidebar.classList.remove('collapsed');
+    sidebarExpand.classList.add('hidden');
+});
+
+// View Navigation Logic
+function switchView(viewName) {
+    if (viewName === 'chat') {
+        globalDashboardView.classList.remove('active-view');
+        globalDashboardView.classList.add('hidden');
+        chatWindow.classList.add('active-view');
+        chatWindow.classList.remove('hidden');
+        inputContainer.classList.remove('hidden');
+    } else if (viewName === 'dashboard') {
+        chatWindow.classList.remove('active-view');
+        chatWindow.classList.add('hidden');
+        inputContainer.classList.add('hidden');
+        globalDashboardView.classList.add('active-view');
+        globalDashboardView.classList.remove('hidden');
+        loadGlobalMetrics();
+    }
+}
+
+navDashboard.addEventListener('click', () => switchView('dashboard'));
+navReports.addEventListener('click', () => switchView('dashboard')); // Share view for now
+
+newSessionBtn.addEventListener('click', () => {
+    switchView('chat');
+    resetChat();
+});
+
+async function loadGlobalMetrics() {
+    try {
+        const res = await fetch('/api/global_metrics');
+        const data = await res.json();
+        
+        document.getElementById('dashTotal').innerText = data.aggregated_metrics.total_tests;
+        document.getElementById('dashRate').innerText = data.aggregated_metrics.pass_rate + '%';
+        document.getElementById('dashFailed').innerText = data.aggregated_metrics.total_failed;
+        
+        const grid = document.getElementById('reportsGrid');
+        grid.innerHTML = '';
+        if(data.historical_reports.length === 0) {
+            grid.innerHTML = '<p style="color:var(--text-secondary)">No automation runs recorded yet.</p>';
+        }
+        
+        data.historical_reports.forEach(r => {
+            const row = document.createElement('div');
+            row.className = 'report-row';
+            row.innerHTML = `
+                <div><strong>${r.feature}</strong><br><small style="color:var(--text-secondary)">${r.session_id}</small></div>
+                <div style="color:var(--pass-color)">PASS: ${r.passed}</div>
+                <div style="color:var(--fail-color)">FAIL: ${r.failed}</div>
+            `;
+            row.onclick = () => {
+                switchView('chat');
+                loadSessionData(r.session_id);
+            };
+            grid.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Failed to fetch global metrics", err);
+    }
+}
 
 // Allow pressing Enter to send prompt
 promptInput.addEventListener('keydown', (e) => {
