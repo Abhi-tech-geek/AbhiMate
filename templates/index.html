@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbhiMate AI Automation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="AbhiMate Logo" class="brand-logo">
+            <h2>AbhiMate</h2>
+        </div>
+        
+        <button id="newSessionBtn" class="btn primary-btn new-chat-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New Chat
+        </button>
+
+        <div class="sidebar-nav">
+            <p class="nav-title">History</p>
+            <ul id="historyList" class="history-list">
+                <!-- Dynamically populated via JS -->
+            </ul>
+        </div>
+        
+        <div class="sidebar-extra-nav">
+            <p class="nav-title">Workspace</p>
+            <ul class="extra-list">
+                <li class="extra-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</li>
+                <li class="extra-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports</li>
+                <li class="extra-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Summary</li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="profile-widget">
+                <div class="profile-avatar">AM</div>
+                <div class="profile-info">
+                    <span class="profile-name">QA Architect</span>
+                    <span class="profile-role">Admin</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="main-content">
+        <!-- Floating Animated Backgrounds -->
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+
+        <div id="chatWindow" class="chat-window">
+            
+            <!-- Welcome Splash (Hidden when session active) -->
+            <div id="welcomeSplash" class="welcome-splash">
+                <img src="{{ url_for('static', filename='logo.png') }}" class="splash-logo" alt="AbhiMate">
+                <h1>How can I automate your testing today?</h1>
+                <p>Describe a web feature, URL, or form, and I will strictly engineer exhaustive test cases for you.</p>
+            </div>
+
+            <!-- Messages/Results Container -->
+            <div id="messagesContainer" class="messages-container hidden">
+                <!-- User Prompt Bubble -->
+                <div class="bubble user-bubble">
+                    <div class="bubble-avatar">You</div>
+                    <div class="bubble-content" id="sessionFeatureText">...</div>
+                </div>
+
+                <!-- AI Response Bubble -->
+                <div class="bubble ai-bubble">
+                    <div class="bubble-avatar"><img src="{{ url_for('static', filename='logo.png') }}"></div>
+                    <div class="bubble-content">
+                        <h4>Test Cases Generated Successfully</h4>
+                        <p>I have engineered exhaustive steps and robust Selenium Locators. Please review the breakdown below.</p>
+                        
+                        <!-- Test Cases Ledger -->
+                        <div id="testCasesContainer" class="ledger"></div>
+                        
+                        <!-- STEP 2 Action Area -->
+                        <div id="automationActionArea" class="action-card glass-panel hidden">
+                            <p>Would you like me to natively spin up the Chrome browser and autonomously execute these scripts on your host?</p>
+                            <div class="action-buttons">
+                                <button id="triggerAutomationBtn" class="btn run-btn">🚀 Execute Selenium Automation</button>
+                                <button id="saveManualBtn" class="btn secondary-btn">💾 Save as Manual Tests Only</button>
+                            </div>
+                        </div>
+
+                        <!-- Execution Results / Executive Summary Area -->
+                        <div id="executionResultsArea" class="hidden">
+                            <h3 class="section-heading">Executive Report</h3>
+                            <div class="metrics-grid">
+                                <div class="metric-card"><span>Total</span><h2 id="metricTotal">0</h2></div>
+                                <div class="metric-card pass"><span>Passed</span><h2 id="metricPassed">0</h2></div>
+                                <div class="metric-card fail"><span>Failed</span><h2 id="metricFailed">0</h2></div>
+                            </div>
+                            <div class="summary-box">
+                                <strong>Bug Analyzer Output:</strong>
+                                <p id="executiveSummary"></p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FIXED INPUT BOX -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea id="promptInput" rows="1" placeholder="Engineer tests for the Google Search bar..."></textarea>
+                <button id="sendPromptBtn" class="send-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+            <div class="footer-note">AbhiMate AI Automation can make mistakes. Consider verifying tests before deploying to production.</div>
+        </div>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

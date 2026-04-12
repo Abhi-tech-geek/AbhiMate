@@ -1,0 +1,5 @@
+groq==1.1.2
+python-dotenv==1.0.1
+selenium
+webdriver-manager
+Flask==3.0.0
