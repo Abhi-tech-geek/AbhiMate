@@ -1,72 +1,178 @@
-# AbhiMate - Next-Generation AI Testing Architecture
+# 🚀 AbhiMate – AI Testing Platform (Multi-Agent System)
 
-Welcome to **AbhiMate**, an ultra-premium, production-grade **Multi-Agent QA System**. AbhiMate natively replaces tedious manual test construction by utilizing the Groq Llama-3 70B LLM to engineer, orchestrate, and physically execute resilient software automation scripts seamlessly from a dedicated Cyber-QA Dashboard.
+## 🧠 Overview
 
----
+AbhiMate is an AI-powered multi-agent QA testing platform that automates the entire testing lifecycle — from test case generation to execution, bug analysis, and reporting.
 
-## 🚀 The Multi-Agent Paradigm
-
-AbhiMate operates on a 4-Tier Agent Architecture. It behaves exactly like a Senior QA team.
-
-1. **The Generator (Agent 1):** You type a functional description (e.g. "Google Search logic") into the Chat interface. This agent intercepts the prompt and extrapolates deep, exhaustive, "pure" step-by-step test cases. It also writes corresponding raw Selenium Python code utilizing dynamic waits (EC.presence_of_element_located) to ensure DOM stability.
-2. **The Executor (Agent 2):** Native headless and non-headless browser deployment. When you click `Execute Selenium Automation`, this agent spawns a Chromium instance and isolates the AI-generated code securely. It takes visual error screenshots exactly upon finding DOM desyncs.
-3. **The Bug Diagnostics Engine (Agent 3):** If a test fails (e.g., `TimeoutException`, `NoSuchElementException`), this agent reads the raw Stack Trace natively and bounces it back to the LLM to write a plain-English, human-readable deduction of *why* the bug occurred and *where*.
-4. **The Telemetry Reporter (Agent 4):** Summarizes the exact metrics of the entire test lifecycle, constructing robust JSON outputs consumed directly into the global dashboard.
+This project combines **Generative AI + Selenium Automation + Multi-Agent Systems** to simulate a real-world intelligent QA pipeline.
 
 ---
 
-## 💻 The Cyber-QA Dashboard & SPA Configuration
-AbhiMate provides a futuristic, robust Web UI tailored strictly for Software Testers:
+## ⚡ Features
 
-- **Single Page Application (SPA):** Instant structural transitions. Swap between generating new Chat runs and viewing Global metrics instantly without reloading your DOM.
-- **Session Persistence Tracking:** Modeled after ChatGPT, your left Sidebar permanently arrays every historical run you've ever taken. It natively restores the Chat interface back to the exact snapshot of data when clicked.
-- **Global Dashboard / Telemetry Hub:** Automatically queries the backend database endpoints traversing all localized configurations. Calculates your overall passing/failing rates across every automation suite you've deployed!
-- **Terminal Theming:** Encoded utilizing specific Matrix-Green and Deep-Black styling alongside Monospaced Typefaces specifically structured for DevOps tracking.
+### 🤖 AI Test Case Generator
+
+* Generates structured test cases using LLM (Groq - LLaMA3)
+* Covers:
+
+  * Positive scenarios
+  * Negative scenarios
+  * Edge cases
+
+### ⚙️ Automation Engine (Selenium)
+
+* Executes test cases using Selenium WebDriver
+* Automates:
+
+  * Browser navigation
+  * Form interactions
+  * Click actions
+
+### 🐞 Bug Analyzer
+
+* Uses AI to analyze failed test cases
+* Provides human-readable explanations for failures
+
+### 📊 Dashboard
+
+* Interactive UI using Streamlit
+* Displays:
+
+  * Pass/Fail metrics
+  * Charts & insights
+
+### 🧩 Multi-Agent Architecture
+
+* Agent-based system:
+
+  * Test Generator Agent
+  * Execution Agent
+  * Bug Analyzer Agent
+  * Reporting Agent
 
 ---
 
-## 📦 System Installation
+## 🏗️ Architecture
 
-### Prerequisites
-Ensure you have **Python 3.10+** and Git installed locally on your network frame. 
-You will also require a valid `GROQ_API_KEY`.
+Input → Test Generator → Execution → Bug Analyzer → Reporting → Dashboard
 
-### Initialization
-```bash
-# Clone the repository
+---
+
+## 🛠️ Tech Stack
+
+* **Python**
+* **Groq API (LLaMA3)**
+* **Selenium WebDriver**
+* **Streamlit**
+* **Pandas / Matplotlib**
+* **dotenv**
+
+---
+
+## 📁 Project Structure
+
+```id="r1m9xk"
+ai-testing-platform/
+│
+├── agents/
+│   ├── test_generator_agent.py
+│   ├── execution_agent.py
+│   ├── bug_analyzer_agent.py
+│   └── reporting_agent.py
+│
+├── services/
+├── prompt_templates/
+├── output/
+├── dashboard.py
+├── main.py
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+---
+
+## ⚙️ Installation
+
+```bash id="kj4r8x"
 git clone https://github.com/Abhi-tech-geek/AbhiMate.git
 cd AbhiMate
-
-# Deploy an isolated Environment 
-python -m venv venv
-
-# Activate Environment (Windows Core)
-venv\Scripts\activate
-# Activate Environment (Unix Core)
-source venv/bin/activate
-
-# Fetch Core Dependencies
 pip install -r requirements.txt
 ```
 
-### Environment Security
-We utilize local `.env` bindings to keep all external API keys out of root directories.
-1. Extract `.env.example` -> Rename to `.env`.
-2. Input `GROQ_API_KEY=your_authentication_key`.
-
 ---
 
-## 🎯 Boot Sequence & Operation
+## 🔐 Setup Environment Variables
 
-Initialize the backend architectural wrapper.
-```bash
-python app.py
+Create a `.env` file:
+
+```id="9p3xqa"
+GROQ_API_KEY=your_api_key_here
 ```
-Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** inside your browser.
-
-1. **Generation:** Press "+ New Session". Log your target (e.g., `GitHub User Matrix Login`).
-2. **Evaluation:** Wait for the AI LLM to construct your Ledger payload.
-3. **Execution Decision:** View your metrics and intelligently decide whether to save them passively locally or initialize the Selenium Engine to rip through the DOM natively!
 
 ---
-*Developed with rigorous stability and structural integrity frameworks.*
+
+## ▶️ Run the Project
+
+### 1️⃣ Run AI Testing Pipeline
+
+```bash id="w0l7yb"
+python main.py
+```
+
+### 2️⃣ Launch Dashboard
+
+```bash id="t8f2nv"
+streamlit run dashboard.py
+```
+
+---
+
+## 📊 Sample Output
+
+* `output/test_cases.json`
+* `output/execution_results.json`
+* `output/final_report.json`
+
+---
+
+## 📸 Screenshots (Add your images here)
+
+* Dashboard UI
+* Selenium test execution
+* Bug analysis output
+
+---
+
+## 🚀 Future Improvements
+
+* Self-healing selectors (AI-based)
+* API testing integration
+* CI/CD pipeline integration
+* Cloud deployment
+* Advanced AI insights
+
+---
+
+## 💼 Use Case
+
+This project demonstrates how AI can transform traditional QA processes into intelligent, automated systems using Selenium-based execution and LLM-driven insights.
+
+---
+
+## 👨‍💻 Author
+
+**Abhinav (AbhiMate Creator)**
+AI + QA Automation Enthusiast 🚀
+
+---
+
+## ⭐ Contribute / Support
+
+If you like this project:
+
+* ⭐ Star the repo
+* 🍴 Fork it
+* 💡 Share feedback
+
+---
