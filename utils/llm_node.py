@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class LLMService:
+class LLMNode:
     """
-    Unified service to interact with the Groq API.
-    Used by all Multi-Agent components.
+    Unified LLM Node for querying Groq API.
+    Enforces structured JSON generation.
     """
     def __init__(self, model="llama-3.3-70b-versatile"):
         api_key = os.environ.get("GROQ_API_KEY")
@@ -18,7 +18,7 @@ class LLMService:
         self.client = Groq(api_key=api_key)
         self.model = model
 
-    def prompt_json(self, system_message: str, user_prompt: str) -> dict:
+    def query_json(self, system_message: str, user_prompt: str) -> dict:
         """
         Forces LLM to return a valid JSON object.
         """
@@ -28,7 +28,7 @@ class LLMService:
                 {"role": "user", "content": user_prompt}
             ],
             model=self.model,
-            temperature=0.7,
+            temperature=0.3, # Lowered for more deterministic structure
             response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
@@ -37,10 +37,7 @@ class LLMService:
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse JSON response: {str(e)} -> {content}")
 
-    def prompt_text(self, system_message: str, user_prompt: str) -> str:
-        """
-        Returns a standard text response.
-        """
+    def query_text(self, system_message: str, user_prompt: str) -> str:
         response = self.client.chat.completions.create(
             messages=[
                 {"role": "system", "content": system_message},

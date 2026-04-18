@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbhiMate Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- TOP NAVIGATION -->
+    <header class="top-nav">
+        <div class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" class="logo">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <h2>AbhiMate QA</h2>
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-target="dashboardView">Dashboard</button>
+            <button class="nav-tab" data-target="reportsView">Reports & Analysis</button>
+            <button class="nav-tab" data-target="automatedView">Automated</button>
+        </div>
+        <div class="nav-actions">
+            <select id="envSelect" class="env-dropdown">
+                <option value="web">Environment: Web (Selenium)</option>
+                <option value="android" disabled>Environment: Android (Coming Soon)</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="layout-wrapper">
+        <!-- LEFT SIDEBAR (Only Test Sessions) -->
+        <aside class="sidebar">
+            <button id="newSessionBtn" class="btn primary-btn">+ New Session</button>
+            <div class="sidebar-list-container">
+                <h4 class="sidebar-title">Recent Sessions</h4>
+                <ul id="sessionList" class="session-list">
+                    <!-- Session items injected here -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- MAIN SCREEN -->
+        <main class="main-content">
+            
+            <!-- DASHBOARD VIEW -->
+            <div id="dashboardView" class="view-panel active-view">
+                <!-- Welcome OR Active Session Details -->
+                <div id="welcomeState">
+                    <h1>Welcome to AbhiMate</h1>
+                    <p class="subtitle">Enter a feature below to trigger the 4-Agent QA Pipeline.</p>
+                </div>
+
+                <div id="activeSessionState" class="hidden">
+                    <h2 id="activeSessionTitle" class="session-title">...</h2>
+                    <div class="status-badge" id="activeSessionStatus">GENERATED</div>
+                    
+                    <div class="test-cases-list" id="testCasesContainer">
+                        <!-- Test Cases injected here -->
+                    </div>
+
+                    <div id="automationPrompt" class="automation-prompt panel hidden">
+                        <h3>Human in the Loop Pause</h3>
+                        <p>The TestCaseGeneratorAgent has prepared the test suite.</p>
+                        <p>Do you want to run these tests via the AutomationExecutorAgent now?</p>
+                        <div class="prompt-actions">
+                            <button id="runAutomationBtn" class="btn primary-btn">Execute Tests</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input fixed to bottom of Dashboard -->
+                <div class="input-area">
+                    <div class="input-box">
+                        <textarea id="featureInput" placeholder="Describe the feature or UI requirement..."></textarea>
+                        <button id="generateBtn" class="send-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTS VIEW -->
+            <div id="reportsView" class="view-panel">
+                <h1>Report & Analysis Dashboard</h1>
+                <p class="subtitle">Global overview across all test sessions.</p>
+                <div class="reports-grid" id="globalReportsContainer">
+                    <!-- populated from MemoryManager -->
+                </div>
+            </div>
+
+            <!-- AUTOMATED (DIRECT EXECUTION) VIEW -->
+            <div id="automatedView" class="view-panel">
+                <h1>Automated Execution Pipelines</h1>
+                <p class="subtitle">Bypass AI human-in-the-loop pauses.</p>
+
+                <div class="test-case-card" style="margin-top: 2rem;">
+                    <h3>Zero-Touch Automation</h3>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:15px;">Describe a feature. The AI will generate test cases AND execute them back-to-back automatically.</p>
+                    <textarea id="zeroTouchInput" style="width: 100%; height: 100px; background: var(--bg-darker); color: #fff; border: 1px solid var(--glass-border); border-radius: 6px; padding: 10px; resize: vertical;" placeholder="For example: Search feature on the e-commerce home page..."></textarea>
+                    
+                    <button id="zeroTouchBtn" class="btn primary-btn" style="margin-top: 15px;">Generate & Run Automatically</button>
+                    <p id="zeroTouchStatus" style="margin-top: 10px; color: var(--accent); font-weight: bold;"></p>
+                </div>
+
+                <div class="test-case-card" style="margin-top: 2rem;">
+                    <h3>Direct JSON Runner</h3>
+                    <div style="margin-bottom: 10px; color: var(--accent);">Feature Name (Optional)</div>
+                    <input type="text" id="directFeatureInput" class="env-dropdown" style="width: 100%; margin-bottom: 20px;" placeholder="e.g. Existing Login Suite">
+                    
+                    <div style="margin-bottom: 10px; color: var(--accent);">Paste Valid JSON Array here</div>
+                    <textarea id="directJsonInput" style="width: 100%; height: 250px; background: #000; color: #4ade80; font-family: monospace; border: 1px solid var(--glass-border); border-radius: 6px; padding: 10px; resize: vertical;" placeholder='[\n  {\n    "id": "TC001",\n    "type": "Positive",\n    "description": "...",\n    "steps": [],\n    "selenium_action": "...",\n    "expected": "..."\n  }\n]'></textarea>
+                    
+                    <button id="directRunBtn" class="btn primary-btn" style="margin-top: 20px;">Execute Suite Instantly</button>
+                    <p id="directStatus" style="margin-top: 10px; color: var(--accent); font-weight: bold;"></p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal for Detailed Reports -->
+    <div id="reportModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modalSessionTitle">Session Report</h2>
+            <div class="metrics-row">
+                <div class="metric pass">Pass: <span id="mPass">0</span></div>
+                <div class="metric fail">Fail: <span id="mFail">0</span></div>
+                <div class="metric skip">Skip: <span id="mSkip">0</span></div>
+            </div>
+            <h3>Executive Summary</h3>
+            <p id="modalSummary">...</p>
+            <h3>Failure Root Cause Analysis</h3>
+            <div id="modalFailures"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,17 +1,22 @@
 import os
-import json
+import time
 import uuid
-import glob
 from flask import Flask, render_template, request, jsonify
-from agents.test_generator_agent import TestGeneratorAgent
-from agents.execution_agent import ExecutionAgent
-from agents.bug_analyzer_agent import BugAnalyzerAgent
-from agents.reporting_agent import ReportingAgent
 
-app = Flask(__name__)
+from utils.models import TestSession
+from agents.test_case_generator_agent import TestCaseGeneratorAgent
+from agents.automation_executor_agent import AutomationExecutorAgent
+from agents.report_analysis_agent import ReportAndAnalysisAgent
+from agents.memory_manager_agent import MemoryManagerAgent
 
-SESSION_DIR = "sessions"
-os.makedirs(SESSION_DIR, exist_ok=True)
+app = Flask(__name__, template_folder="ui/templates", static_folder="ui/static")
+
+# Initialize Agents
+generator_agent = TestCaseGeneratorAgent()
+executor_agent = AutomationExecutorAgent()
+report_agent = ReportAndAnalysisAgent()
+memory_agent = MemoryManagerAgent()
+
 
 @app.route("/")
 def index():
@@ -19,72 +24,29 @@ def index():
 
 @app.route("/api/sessions", methods=["GET"])
 def get_sessions():
-    """Returns a list of all chat sessions"""
-    sessions = []
-    for filepath in glob.glob(os.path.join(SESSION_DIR, "*.json")):
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                sessions.append({
-                    "id": data.get("session_id"),
-                    "feature": data.get("feature", "Unknown Feature"),
-                    "timestamp": os.path.getctime(filepath)
-                })
-        except Exception:
-            pass
-    # Sort newest first
-    sessions.sort(key=lambda x: x["timestamp"], reverse=True)
-    return jsonify(sessions)
+    """Returns a lightweight list of all test sessions"""
+    try:
+        sessions = memory_agent.list_all_sessions()
+        return jsonify(sessions)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/sessions/<session_id>", methods=["GET"])
 def get_session(session_id):
-    """Fetch session details"""
-    path = os.path.join(SESSION_DIR, f"{session_id}.json")
-    if not os.path.exists(path):
-        return jsonify({"error": "Session not found"}), 404
-    
-    with open(path, "r", encoding="utf-8") as f:
-        return jsonify(json.load(f))
+    """Fetch full session details including cases and reports"""
+    try:
+        session = memory_agent.load_session(session_id)
+        return jsonify(session.model_dump())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 404
 
-@app.route("/api/global_metrics", methods=["GET"])
-def get_global_metrics():
-    """Aggregates all execution data globally from sessions"""
-    total_tests = 0
-    total_passed = 0
-    total_failed = 0
-    reports = []
-    
-    for filepath in glob.glob(os.path.join(SESSION_DIR, "*.json")):
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                
-                # Check if it was executed and has metrics
-                if data.get("state") == "EXECUTED" and "metrics" in data:
-                    metrics = data["metrics"]
-                    total_tests += metrics.get("total", 0)
-                    total_passed += metrics.get("passed", 0)
-                    total_failed += metrics.get("failed", 0)
-                    
-                    reports.append({
-                        "session_id": data.get("session_id"),
-                        "feature": data.get("feature"),
-                        "passed": metrics.get("passed", 0),
-                        "failed": metrics.get("failed", 0),
-                        "summary": data.get("executive_summary", "No summary.")
-                    })
-        except Exception:
-            pass
-
-    return jsonify({
-        "aggregated_metrics": {
-            "total_tests": total_tests,
-            "total_passed": total_passed,
-            "total_failed": total_failed,
-            "pass_rate": round((total_passed / total_tests * 100), 2) if total_tests > 0 else 0
-        },
-        "historical_reports": reports
-    })
+@app.route("/api/sessions/<session_id>", methods=["DELETE"])
+def delete_session(session_id):
+    try:
+        memory_agent.delete_session(session_id)
+        return jsonify({"status": "deleted"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/generate", methods=["POST"])
 def generate_tests():
@@ -95,31 +57,26 @@ def generate_tests():
         return jsonify({"error": "Feature description is required."}), 400
 
     session_id = str(uuid.uuid4())
-    session_file = os.path.join(SESSION_DIR, f"{session_id}.json")
-
+    
     try:
-        # Phase 1: Generation
-        generator = TestGeneratorAgent()
-        # It normally outputs to {"test_cases": ...}
-        # We will wrap it with session metadata
-        result = generator.generate(feature, output_path=session_file)
+        # Agent 1: Generate Test Cases
+        test_cases = generator_agent.generate(feature)
         
-        # Inject metadata into the file
-        with open(session_file, "r", encoding="utf-8") as f:
-            full_data = json.load(f)
-            
-        full_data["session_id"] = session_id
-        full_data["feature"] = feature
-        full_data["state"] = "GENERATED" # Or EXECUTED
+        # Create Session Object
+        session = TestSession(
+            session_id=session_id,
+            feature=feature,
+            state="GENERATED",
+            timestamp=time.time(),
+            test_cases=test_cases
+        )
         
-        with open(session_file, "w", encoding="utf-8") as f:
-            json.dump(full_data, f, indent=4)
+        # Agent 4: Store in Memory
+        memory_agent.save_session(session)
             
         return jsonify({
             "message": "Test Cases Generated Successfully",
-            "session_id": session_id,
-            "feature": feature,
-            "test_cases": full_data.get("test_cases", [])
+            "session": session.model_dump()
         })
 
     except Exception as e:
@@ -127,48 +84,130 @@ def generate_tests():
 
 @app.route("/api/execute/<session_id>", methods=["POST"])
 def execute_session(session_id):
-    session_file = os.path.join(SESSION_DIR, f"{session_id}.json")
-    if not os.path.exists(session_file):
-        return jsonify({"error": "Session not found"}), 404
-        
+    environment = request.json.get("environment", "web")
+    
     try:
-        # Phase 2: Execution (in-place modification of session_file)
-        executor = ExecutionAgent(input_path=session_file, output_path=session_file)
-        executor.execute()
+        # Load from DB
+        session = memory_agent.load_session(session_id)
         
-        # Phase 3: Analysis
-        analyzer = BugAnalyzerAgent(input_path=session_file)
-        analyzer.analyze()
-        
-        # Phase 4: Reporting
-        reporter = ReportingAgent(input_path=session_file, output_path=session_file)
-        final_report = reporter.report()
-        
-        # Mark state as EXECUTED
-        with open(session_file, "r", encoding="utf-8") as f:
-            full_data = json.load(f)
+        if not session.test_cases:
+            return jsonify({"error": "No test cases found in this session."}), 400
             
-        full_data["state"] = "EXECUTED"
-        # Overwrite the file with the final merged state
-        # The ReportingAgent creates {"metrics": ..., "executive_summary": ..., "test_cases": ...}
-        # Let's restore the metadata
-        final_report["session_id"] = session_id
-        final_report["feature"] = full_data.get("feature", "")
-        final_report["state"] = "EXECUTED"
+        # Agent 2: Execution
+        executor_agent.mode = environment 
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
         
-        with open(session_file, "w", encoding="utf-8") as f:
-            json.dump(final_report, f, indent=4)
+        # Update session with executed test cases
+        session.test_cases = updated_cases
+        session.state = "EXECUTED"
+        memory_agent.save_session(session)
+        
+        # Agent 3: Analysis and Reporting
+        report = report_agent.analyze(session.test_cases, metrics)
+        session.report = report
+        
+        # Agent 4: Final Save to Memory
+        memory_agent.save_session(session)
         
         return jsonify({
-            "message": "Full Automation Pipeline Complete",
-            "session_id": session_id,
-            "test_cases": final_report.get("test_cases", []),
-            "metrics": final_report.get("metrics"),
-            "executive_summary": final_report.get("executive_summary")
+            "message": "Automation Execution Complete",
+            "session": session.model_dump()
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/execute_direct", methods=["POST"])
+def execute_direct():
+    data = request.json
+    feature = data.get("feature", "Direct Automated Execution")
+    environment = data.get("environment", "web")
+    raw_cases = data.get("test_cases", [])
+    
+    if not raw_cases:
+        return jsonify({"error": "No test cases provided."}), 400
+
+    from utils.models import TestCase
+    
+    test_cases = []
+    for rc in raw_cases:
+        try:
+            tc = TestCase(**rc)
+            test_cases.append(tc)
+        except Exception as e:
+            return jsonify({"error": f"Invalid test case schema: {str(e)}"}), 400
+            
+    session_id = str(uuid.uuid4())
+    
+    try:
+        session = TestSession(
+            session_id=session_id,
+            feature=feature,
+            state="GENERATED",
+            timestamp=time.time(),
+            test_cases=test_cases
+        )
+        memory_agent.save_session(session)
+        
+        executor_agent.mode = environment 
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        
+        session.test_cases = updated_cases
+        session.state = "EXECUTED"
+        memory_agent.save_session(session)
+        
+        report = report_agent.analyze(session.test_cases, metrics)
+        session.report = report
+        
+        memory_agent.save_session(session)
+        
+        return jsonify({
+            "message": "Direct Execution Complete",
+            "session": session.model_dump()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/zero_touch", methods=["POST"])
+def zero_touch_execute():
+    data = request.json
+    feature = data.get("feature", "")
+    environment = data.get("environment", "web")
+    
+    if not feature:
+        return jsonify({"error": "Feature description is required."}), 400
+
+    session_id = str(uuid.uuid4())
+    try:
+        # Phase 1: Generate
+        test_cases = generator_agent.generate(feature)
+        session = TestSession(
+            session_id=session_id,
+            feature=feature,
+            state="GENERATED",
+            timestamp=time.time(),
+            test_cases=test_cases
+        )
+        memory_agent.save_session(session)
+        
+        # Phase 2: Execute Immediately
+        executor_agent.mode = environment 
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        session.test_cases = updated_cases
+        session.state = "EXECUTED"
+        memory_agent.save_session(session)
+        
+        # Phase 3: Reporting
+        report = report_agent.analyze(session.test_cases, metrics)
+        session.report = report
+        memory_agent.save_session(session)
+        
+        return jsonify({
+            "message": "Zero-Touch Execution Complete",
+            "session": session.model_dump()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
-    app.run(debug=False, port=5000)
+    app.run(debug=True, port=5000)
