@@ -55,3 +55,36 @@ Return JSON: {{"executive_summary": "1-paragraph human-readable summary"}}
             executive_summary=executive_summary,
             test_cases=test_cases
         )
+
+    def generate_global_insights(self, failed_cases: List[dict]) -> dict:
+        print("-> Generating Global AI Insights from all failures...")
+        if not failed_cases:
+            return {"bug_patterns": ["No distinct bug patterns detected."], "ai_suggestions": "System is highly stable."}
+            
+        system_message = "You are an AI Quality Assurance Director identifying overarching themes in failures."
+        prompt = f"""
+Here is a complete JSON dump of all failed test cases across all sessions:
+{failed_cases}
+
+Analyze this historical data and identify:
+1. "bug_patterns": A list of the Top 3 distinct recurring failure trends (e.g. timeout on login, specific selector missing).
+2. "ai_suggestions": A 2-3 sentence strategic recommendation to the engineering team.
+
+Format Requirements:
+Output valid JSON:
+{{
+    "bug_patterns": ["trend 1", "trend 2", "trend 3"],
+    "ai_suggestions": "explanation"
+}}
+"""
+        try:
+            res = self.llm.query_json(system_message, prompt)
+            return {
+                "bug_patterns": res.get("bug_patterns", ["Failed to deduce patterns."]),
+                "ai_suggestions": res.get("ai_suggestions", "No strategic suggestions available.")
+            }
+        except Exception as e:
+            return {
+                "bug_patterns": [f"LLM Error: {{str(e)}}"],
+                "ai_suggestions": "System encountered an error parsing global insights."
+            }

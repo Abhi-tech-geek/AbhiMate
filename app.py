@@ -209,5 +209,86 @@ def zero_touch_execute():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/reports/global_insights", methods=["GET"])
+def get_global_insights():
+    sessions = memory_agent.get_all_sessions()
+    
+    failed_cases_payload = []
+    total_cases = 0
+    total_passes = 0
+    total_fails = 0
+    
+    for session in sessions:
+        if session.report:
+            total_cases += session.report.metrics.total
+            total_passes += session.report.metrics.passed
+            total_fails += session.report.metrics.failed
+            for tc in session.test_cases:
+                if tc.status == "Fail":
+                    failed_cases_payload.append({
+                        "session": session.feature,
+                        "test_id": tc.id,
+                        "description": tc.description,
+                        "error": tc.error,
+                        "isolated_insight": tc.bug_insight
+                    })
+    
+    insights = report_agent.generate_global_insights(failed_cases_payload)
+    
+    return jsonify({
+        "total_evaluated": total_cases,
+        "pass_rate": round(total_passes/total_cases*100, 1) if total_cases > 0 else 0,
+        "total_failures": total_fails,
+        "most_failing_tests": failed_cases_payload[-10:],
+        "bug_patterns": insights.get("bug_patterns", []),
+        "ai_suggestions": insights.get("ai_suggestions", "")
+    })
+
+@app.route("/api/url_auto", methods=["POST"])
+def execute_url_auto():
+    data = request.json
+    url = data.get("url", "")
+    
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+        
+    session_id = str(uuid.uuid4())
+    try:
+        from utils.automation_drivers import WebSeleniumDriver
+        driver = WebSeleniumDriver()
+        dom_map = driver.extract_dom_map(url)
+        driver.quit()
+        
+        if "error" in dom_map:
+            raise Exception("Failed to map DOM: " + dom_map["error"])
+            
+        test_cases = generator_agent.generate_from_url_dom(url, dom_map)
+        
+        session = TestSession(
+            session_id=session_id,
+            feature=f"URL Scrape: {url}",
+            state="GENERATED",
+            timestamp=time.time(),
+            test_cases=test_cases
+        )
+        memory_agent.save_session(session)
+        
+        executor_agent.mode = "web"
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        session.test_cases = updated_cases
+        session.state = "EXECUTED"
+        memory_agent.save_session(session)
+        
+        report = report_agent.analyze(session.test_cases, metrics)
+        session.report = report
+        memory_agent.save_session(session)
+        
+        return jsonify({
+            "message": "URL Full Automation Complete",
+            "session": session.model_dump()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

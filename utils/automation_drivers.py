@@ -44,3 +44,37 @@ class WebSeleniumDriver(BaseDriver):
             self.driver.save_screenshot(path)
             return path
         return ""
+
+    def extract_dom_map(self, url: str) -> dict:
+        if not self.driver:
+            self.start()
+        
+        try:
+            self.driver.get(url)
+            import time
+            time.sleep(3) # Wait for page load
+            
+            script = """
+            return Array.from(document.querySelectorAll('input, button, a, select, textarea')).map(el => {
+                let rect = el.getBoundingClientRect();
+                if (rect.width === 0 && rect.height === 0) return null;
+                return {
+                    tag: el.tagName.toLowerCase(),
+                    id: el.id || '',
+                    name: el.name || '',
+                    type: el.type || '',
+                    text: el.innerText ? el.innerText.trim() : (el.value || ''),
+                    placeholder: el.placeholder || '',
+                    href: el.href || ''
+                };
+            }).filter(e => e !== null);
+            """
+            elements = self.driver.execute_script(script)
+            
+            return {
+                "url": url,
+                "title": self.driver.title,
+                "interactable_elements": elements
+            }
+        except Exception as e:
+            return {"error": str(e)}

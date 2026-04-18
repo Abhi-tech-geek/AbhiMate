@@ -21,7 +21,9 @@ AbhiMate provides a futuristic, robust Web UI tailored strictly for Software Tes
 
 - **Single Page Application (SPA):** Top Navigation Bar isolating Dashboards from Global Reporting. Swap between workflows effortlessly.
 - **Session Persistence Tracking:** Modeled after ChatGPT, your left Sidebar strictly contains your historical session logs.
+- **Global AI Infographics:** Visualize overarching success metrics directly mapped with Chart.js. Generative AI scans across every historical failure globally to deliver executive Bug Pattern suggestions dynamically.
 - **Zero-Touch Automation Pipeline:** Bypass the Human-in-the-loop requirement! Write your feature and let the AI generate the JSON suite, fire up Selenium, and compile the final report back-to-back synchronously.
+- **URL Auto Testing:** Full automation. Enter a raw server URL, and the core Headless driver natively scrapes and maps the internal DOM to generate perfectly mapped Selenium models, executing them instantaneously.
 - **Direct JSON Runner:** Empower engineers who already have test case arrays to bypass generative steps natively, passing existing models directly into the Executor node.
 
 ---

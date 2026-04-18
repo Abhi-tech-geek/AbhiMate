@@ -235,31 +235,61 @@ function renderReportInline(report) {
 
 // Global Reports View
 async function loadGlobalReports() {
-    globalReportsContainer.innerHTML = 'Loading...';
+    const healthCtx = document.getElementById('healthChart');
+    if(window.healthChartInstance) window.healthChartInstance.destroy();
+    
+    document.getElementById('rTotal').innerText = "Loading...";
+    document.getElementById('rPassRate').innerText = "...";
+    document.getElementById('rFail').innerText = "...";
+    
     try {
-        // Here we just fetch sessions and filter executed ones
-        const res = await fetch('/api/sessions');
-        const sessions = await res.json();
-        globalReportsContainer.innerHTML = '';
+        const res = await fetch('/api/reports/global_insights');
+        const data = await res.json();
         
-        let reportCount = 0;
-        for (const s of sessions) {
-            if (s.state === 'EXECUTED') {
-                reportCount++;
-                const card = document.createElement('div');
-                card.className = 'report-card';
-                card.innerHTML = `
-                    <h3>${s.feature || "Unnamed"}</h3>
-                    <p style="color:var(--text-secondary); margin-top:10px; font-size:0.85rem;">Date: ${new Date(s.timestamp*1000).toLocaleString()}</p>
-                    <p style="margin-top:15px; color:var(--accent); font-size:0.9rem;">Click to view full metrics</p>
-                `;
-                card.onclick = () => openReportModal(s.session_id);
-                globalReportsContainer.appendChild(card);
-            }
+        document.getElementById('rTotal').innerText = data.total_evaluated;
+        document.getElementById('rPassRate').innerText = data.pass_rate + "%";
+        document.getElementById('rFail').innerText = data.total_failures;
+        
+        window.healthChartInstance = new Chart(healthCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Passed', 'Failed'],
+                datasets: [{
+                    data: [data.total_evaluated - data.total_failures, data.total_failures],
+                    backgroundColor: ['#4ade80', '#ef4444'],
+                    borderColor: '#121212',
+                    borderWidth: 2
+                }]
+            },
+            options: { cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
+        });
+        
+        const failList = document.getElementById('mostFailingList');
+        failList.innerHTML = '';
+        if (data.most_failing_tests && data.most_failing_tests.length > 0) {
+            data.most_failing_tests.forEach(ft => {
+                failList.insertAdjacentHTML('beforeend', `
+                    <li style="background:var(--bg-panel); border-left:3px solid var(--fail); padding:10px; margin-bottom:10px;">
+                        <strong>${ft.test_id}</strong> (${ft.session})<br>
+                        <span style="color:var(--text-secondary); font-size:0.85rem">${ft.error}</span><br>
+                        <span style="color:var(--accent); font-size:0.85rem">Analyst Insight: ${ft.isolated_insight}</span>
+                    </li>
+                `);
+            });
+        } else {
+            failList.innerHTML = '<li style="color:var(--text-secondary)">No failing tests registered.</li>';
         }
-        if(reportCount === 0) globalReportsContainer.innerHTML = 'No execution reports available yet.';
+        
+        const pContainer = document.getElementById('aiBugPatterns');
+        pContainer.innerHTML = '';
+        data.bug_patterns.forEach(pt => {
+            pContainer.insertAdjacentHTML('beforeend', `<div>• ${pt}</div>`);
+        });
+        
+        document.getElementById('aiSuggestions').innerText = data.ai_suggestions || "No suggestions derived.";
+        
     } catch(err) {
-        globalReportsContainer.innerHTML = 'Failed to load reports.';
+        document.getElementById('rTotal').innerText = "Error loading insights";
     }
 }
 
@@ -394,5 +424,42 @@ zeroTouchBtn.addEventListener('click', async () => {
     } finally {
         zeroTouchBtn.disabled = false;
         setTimeout(() => zeroTouchStatus.innerText = "", 5000);
+    }
+});
+
+// -----------------------------------------
+// URL Auto Testing Logic
+// -----------------------------------------
+const urlAutoInput = document.getElementById('urlAutoInput');
+const urlAutoBtn = document.getElementById('urlAutoBtn');
+const urlAutoStatus = document.getElementById('urlAutoStatus');
+
+urlAutoBtn.addEventListener('click', async () => {
+    const targetUrl = urlAutoInput.value.trim();
+    if (!targetUrl) return;
+    
+    urlAutoStatus.style.color = "var(--accent)";
+    urlAutoStatus.innerText = "Initializing headless crawler... Harvesting DOM... Generative AI processing... Please wait.";
+    urlAutoBtn.disabled = true;
+    
+    try {
+        const res = await fetch('/api/url_auto', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ url: targetUrl })
+        });
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+        
+        document.querySelector('.nav-tab[data-target="dashboardView"]').click();
+        loadSessions();
+        setTimeout(() => loadSessionData(data.session.session_id), 100);
+        
+    } catch (err) {
+        urlAutoStatus.style.color = "var(--fail)";
+        urlAutoStatus.innerText = "Scrape failed: " + err.message;
+    } finally {
+        urlAutoBtn.disabled = false;
+        setTimeout(() => urlAutoStatus.innerText = "", 7000);
     }
 });
