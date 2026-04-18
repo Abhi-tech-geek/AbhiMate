@@ -51,10 +51,13 @@ def delete_session(session_id):
 @app.route("/api/generate", methods=["POST"])
 def generate_tests():
     data = request.json
-    feature = data.get("feature", "")
+    feature_raw = data.get("feature", "")
     
-    if not feature:
+    if not feature_raw:
         return jsonify({"error": "Feature description is required."}), 400
+
+    words = feature_raw.split()
+    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
 
     session_id = str(uuid.uuid4())
     
@@ -120,7 +123,9 @@ def execute_session(session_id):
 @app.route("/api/execute_direct", methods=["POST"])
 def execute_direct():
     data = request.json
-    feature = data.get("feature", "Direct Automated Execution")
+    feature_raw = data.get("feature", "Direct Automated Execution")
+    words = feature_raw.split()
+    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
     environment = data.get("environment", "web")
     raw_cases = data.get("test_cases", [])
     
@@ -171,11 +176,14 @@ def execute_direct():
 @app.route("/api/zero_touch", methods=["POST"])
 def zero_touch_execute():
     data = request.json
-    feature = data.get("feature", "")
+    feature_raw = data.get("feature", "")
     environment = data.get("environment", "web")
     
-    if not feature:
+    if not feature_raw:
         return jsonify({"error": "Feature description is required."}), 400
+
+    words = feature_raw.split()
+    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
 
     session_id = str(uuid.uuid4())
     try:

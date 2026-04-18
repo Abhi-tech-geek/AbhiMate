@@ -37,9 +37,10 @@ body { background: var(--bg-dark); color: var(--text-primary); display: flex; fl
 .sidebar-list-container { margin-top: 2rem; overflow-y: auto;}
 .sidebar-title { font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; }
 .session-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
-.session-item { padding: 12px; border-radius: 8px; cursor: pointer; color: var(--text-secondary); font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; animation: slideIn 0.3s forwards;}
+.session-item { padding: 12px; border-radius: 8px; cursor: pointer; color: var(--text-secondary); font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; animation: slideIn 0.3s forwards; overflow: hidden; }
 .session-item:hover, .session-item.active { background: var(--bg-panel); color: #fff; }
-.delete-btn { background: transparent; border: none; color: var(--fail); cursor: pointer; padding: 4px; display: none; }
+.session-item > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; display: inline-block; }
+.delete-btn { background: transparent; border: none; color: var(--fail); cursor: pointer; padding: 4px; display: none; flex-shrink: 0; }
 .session-item:hover .delete-btn { display: block; }
 
 /* MAIN CONTENT */
