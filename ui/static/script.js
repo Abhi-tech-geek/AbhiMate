@@ -37,7 +37,7 @@ navTabs.forEach(tab => {
         document.getElementById(tab.dataset.target).classList.add('active-view');
         
         if (tab.dataset.target === 'reportsView') {
-            loadGlobalReports();
+            initReportsDashboard();
         }
     });
 });
@@ -233,109 +233,99 @@ function renderReportInline(report) {
     testCasesContainer.insertAdjacentHTML('beforeend', html);
 }
 
-// Global Reports View
-async function loadGlobalReports() {
+// Reports View Logic
+const reportSessionSelect = document.getElementById('reportSessionSelect');
+
+async function initReportsDashboard() {
+    reportSessionSelect.innerHTML = '<option value="">-- Loading Sessions... --</option>';
+    document.getElementById('reportEmptyState').classList.remove('hidden');
+    document.getElementById('reportContentArea').classList.add('hidden');
+    
+    try {
+        const res = await fetch('/api/sessions');
+        const sessions = await res.json();
+        
+        reportSessionSelect.innerHTML = '<option value="">-- Select an Executed Session --</option>';
+        sessions.forEach(s => {
+            if (s.state === 'EXECUTED') {
+                const opt = document.createElement('option');
+                opt.value = s.session_id;
+                opt.innerText = `${s.feature} (${new Date(s.timestamp*1000).toLocaleString()})`;
+                reportSessionSelect.appendChild(opt);
+            }
+        });
+    } catch(err) {
+        reportSessionSelect.innerHTML = '<option value="">-- Failed to Load --</option>';
+    }
+}
+
+reportSessionSelect.addEventListener('change', async (e) => {
+    const sessionId = e.target.value;
+    if(!sessionId) {
+        document.getElementById('reportEmptyState').classList.remove('hidden');
+        document.getElementById('reportContentArea').classList.add('hidden');
+        return;
+    }
+    
+    document.getElementById('reportEmptyState').classList.add('hidden');
+    document.getElementById('reportContentArea').classList.remove('hidden');
+    
+    document.getElementById('rTotal').innerText = "Loading...";
+    document.getElementById('rPass').innerText = "...";
+    document.getElementById('rFail').innerText = "...";
+    document.getElementById('rSummary').innerText = "Analyzing payload...";
+    document.getElementById('rLogsList').innerHTML = "";
+    
     const healthCtx = document.getElementById('healthChart');
     if(window.healthChartInstance) window.healthChartInstance.destroy();
     
-    document.getElementById('rTotal').innerText = "Loading...";
-    document.getElementById('rPassRate').innerText = "...";
-    document.getElementById('rFail').innerText = "...";
-    
     try {
-        const res = await fetch('/api/reports/global_insights');
-        const data = await res.json();
+        const res = await fetch(`/api/sessions/${sessionId}`);
+        const session = await res.json();
+        const report = session.report;
         
-        document.getElementById('rTotal').innerText = data.total_evaluated;
-        document.getElementById('rPassRate').innerText = data.pass_rate + "%";
-        document.getElementById('rFail').innerText = data.total_failures;
+        if(!report) throw new Error("No report generated for this session.");
+        
+        document.getElementById('rTotal').innerText = report.metrics.total;
+        document.getElementById('rPass').innerText = report.metrics.passed;
+        document.getElementById('rFail').innerText = report.metrics.failed;
         
         window.healthChartInstance = new Chart(healthCtx, {
             type: 'doughnut',
             data: {
                 labels: ['Passed', 'Failed'],
                 datasets: [{
-                    data: [data.total_evaluated - data.total_failures, data.total_failures],
+                    data: [report.metrics.passed, report.metrics.failed],
                     backgroundColor: ['#4ade80', '#ef4444'],
                     borderColor: '#121212',
                     borderWidth: 2
                 }]
             },
-            options: { cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
+            options: { cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
         
-        const failList = document.getElementById('mostFailingList');
-        failList.innerHTML = '';
-        if (data.most_failing_tests && data.most_failing_tests.length > 0) {
-            data.most_failing_tests.forEach(ft => {
-                failList.insertAdjacentHTML('beforeend', `
-                    <li style="background:var(--bg-panel); border-left:3px solid var(--fail); padding:10px; margin-bottom:10px;">
-                        <strong>${ft.test_id}</strong> (${ft.session})<br>
-                        <span style="color:var(--text-secondary); font-size:0.85rem">${ft.error}</span><br>
-                        <span style="color:var(--accent); font-size:0.85rem">Analyst Insight: ${ft.isolated_insight}</span>
-                    </li>
-                `);
-            });
-        } else {
-            failList.innerHTML = '<li style="color:var(--text-secondary)">No failing tests registered.</li>';
-        }
+        document.getElementById('rSummary').innerText = report.executive_summary || "No insights created.";
         
-        const pContainer = document.getElementById('aiBugPatterns');
-        pContainer.innerHTML = '';
-        data.bug_patterns.forEach(pt => {
-            pContainer.insertAdjacentHTML('beforeend', `<div>• ${pt}</div>`);
-        });
-        
-        document.getElementById('aiSuggestions').innerText = data.ai_suggestions || "No suggestions derived.";
-        
-    } catch(err) {
-        document.getElementById('rTotal').innerText = "Error loading insights";
-    }
-}
-
-async function openReportModal(sessionId) {
-    modal.classList.remove('hidden');
-    document.getElementById('modalSessionTitle').innerText = 'Loading...';
-    try {
-        const res = await fetch(`/api/sessions/${sessionId}`);
-        const session = await res.json();
-        const report = session.report;
-        
-        document.getElementById('modalSessionTitle').innerText = `Report: ${session.feature}`;
-        
-        if(!report) {
-            document.getElementById('modalSummary').innerText = "Report generation failed or incomplete.";
-            return;
-        }
-
-        document.getElementById('mPass').innerText = report.metrics.passed;
-        document.getElementById('mFail').innerText = report.metrics.failed;
-        document.getElementById('mSkip').innerText = report.metrics.skipped;
-        document.getElementById('modalSummary').innerText = report.executive_summary || "No summary provided.";
-        
-        const fContainer = document.getElementById('modalFailures');
-        fContainer.innerHTML = '';
+        const fContainer = document.getElementById('rLogsList');
         const failedCases = session.test_cases.filter(tc => tc.status === 'Fail');
+        
         if(failedCases.length === 0) {
-            fContainer.innerHTML = '<p>No failures in this suite.</p>';
+            fContainer.innerHTML = '<li style="color:var(--text-secondary)">No failures detected. Perfect run!</li>';
         } else {
             failedCases.forEach(fc => {
                 fContainer.insertAdjacentHTML('beforeend', `
-                    <div style="background:rgba(255,255,255,0.05); padding:10px; border-left:3px solid var(--fail); margin-bottom:10px;">
-                        <strong>${fc.id}</strong>: ${fc.error}<br>
-                        <em style="color:var(--text-secondary)">Insight: ${fc.bug_insight}</em>
-                    </div>
+                    <li style="background:rgba(255,255,255,0.05); padding:10px; border-left:3px solid var(--fail); margin-bottom:10px;">
+                        <strong>${fc.id}</strong><br>
+                        <span style="color:var(--text-secondary); font-size:0.85rem">Error: ${fc.error}</span><br>
+                        <span style="color:var(--accent); font-size:0.85rem">AI Insight: ${fc.bug_insight}</span>
+                    </li>
                 `);
             });
         }
-        
     } catch(err) {
-        document.getElementById('modalSummary').innerText = 'Failed to load report data.';
+        document.getElementById('rSummary').innerText = err.message;
     }
-}
-
-closeModalBtn.onclick = () => modal.classList.add('hidden');
-window.onclick = (e) => { if(e.target === modal) modal.classList.add('hidden'); }
+});
 
 // -----------------------------------------
 // Automated (Direct Execution) Logic

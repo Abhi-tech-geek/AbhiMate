@@ -96,34 +96,42 @@
             <!-- REPORTS VIEW -->
             <div id="reportsView" class="view-panel">
                 <h1>Report & Analysis Dashboard</h1>
-                <p class="subtitle">Global AI Insights and Quality Aggregations.</p>
-                <div class="metrics-row" style="margin-bottom: 2rem;">
-                    <div class="metric total">Total Tests: <span id="rTotal">0</span></div>
-                    <div class="metric pass">Overall Pass Rate: <span id="rPassRate">0%</span></div>
-                    <div class="metric fail">Total Failures: <span id="rFail">0</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                    <p class="subtitle" style="margin: 0;">Select a targeted session to view granular analytical logs.</p>
+                    <select id="reportSessionSelect" class="env-dropdown" style="min-width: 300px; padding: 10px; border-radius: 6px;">
+                        <option value="">-- Load an Executed Session --</option>
+                    </select>
                 </div>
 
-                <div style="display: flex; gap: 2rem; margin-bottom: 2rem; width: 100%;">
-                    <div class="test-case-card" style="flex: 1;">
-                        <h3>Health Status Overview</h3>
-                        <canvas id="healthChart" height="200"></canvas>
+                <div id="reportContentArea" class="hidden">
+                    <div class="metrics-row" style="margin-bottom: 2rem;">
+                        <div class="metric total">Total: <span id="rTotal">0</span></div>
+                        <div class="metric pass">Passed: <span id="rPass">0</span></div>
+                        <div class="metric fail">Failed: <span id="rFail">0</span></div>
+                    </div>
+
+                    <div style="display: flex; gap: 2rem; margin-bottom: 2rem; align-items: stretch;">
+                        <div class="test-case-card" style="flex: 0 0 250px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="margin-bottom: 15px;">Health Status</h3>
+                            <div style="width: 150px; height: 150px; margin: 0 auto; position: relative;">
+                                <canvas id="healthChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="test-case-card" style="flex: 1; display: flex; flex-direction: column;">
+                            <h3>🤖 QA Director Executive Summary</h3>
+                            <p id="rSummary" style="color: var(--text-secondary); line-height: 1.6; margin-top: 10px;"></p>
+                        </div>
+                    </div>
+
+                    <div class="test-case-card" style="margin-bottom: 2rem;">
+                        <h3 style="color:var(--fail);">Developer Failure Logs & Triage Details</h3>
+                        <ul id="rLogsList" style="list-style: none; padding: 0; margin-top: 15px;">
+                        </ul>
                     </div>
                 </div>
-
-                <div class="test-case-card" style="margin-bottom: 2rem;">
-                    <h3 style="color:var(--fail);">Most Failing Tests & Error Logs</h3>
-                    <ul id="mostFailingList" style="list-style: none; padding: 0;">
-                        <!-- populated via js -->
-                    </ul>
-                </div>
-
-                <div class="test-case-card" style="margin-bottom: 2rem;">
-                    <h3>🤖 Global AI Insights & Bug Patterns</h3>
-                    <div id="aiBugPatterns" style="margin-top: 15px; margin-bottom: 15px; color: var(--accent);">
-                        <i>Analyzing patterns natively...</i>
-                    </div>
-                    <h4 style="margin-bottom: 5px;">AI Director Suggestion:</h4>
-                    <p id="aiSuggestions" style="color: var(--text-secondary);">...</p>
+                
+                <div id="reportEmptyState" style="text-align: center; padding: 3rem 0; color: var(--text-secondary);">
+                    No session selected. Please pick a session run from the dropdown above.
                 </div>
             </div>
 
@@ -178,24 +186,6 @@
         </div>
     </div>
 
-    <!-- Modal for Detailed Reports -->
-    <div id="reportModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2 id="modalSessionTitle">Session Report</h2>
-            <div class="metrics-row">
-                <div class="metric pass">Pass: <span id="mPass">0</span></div>
-                <div class="metric fail">Fail: <span id="mFail">0</span></div>
-                <div class="metric skip">Skip: <span id="mSkip">0</span></div>
-            </div>
-            <h3>Executive Summary</h3>
-            <p id="modalSummary">...</p>
-            <h3>Failure Root Cause Analysis</h3>
-            <div id="modalFailures"></div>
-        </div>
-    </div>
-
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
-
 </html>

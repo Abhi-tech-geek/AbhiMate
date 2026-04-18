@@ -211,27 +211,31 @@ def zero_touch_execute():
 
 @app.route("/api/reports/global_insights", methods=["GET"])
 def get_global_insights():
-    sessions = memory_agent.get_all_sessions()
+    session_metadata = memory_agent.list_all_sessions()
     
     failed_cases_payload = []
     total_cases = 0
     total_passes = 0
     total_fails = 0
     
-    for session in sessions:
-        if session.report:
-            total_cases += session.report.metrics.total
-            total_passes += session.report.metrics.passed
-            total_fails += session.report.metrics.failed
-            for tc in session.test_cases:
-                if tc.status == "Fail":
-                    failed_cases_payload.append({
-                        "session": session.feature,
-                        "test_id": tc.id,
-                        "description": tc.description,
-                        "error": tc.error,
-                        "isolated_insight": tc.bug_insight
-                    })
+    for meta in session_metadata:
+        try:
+            session = memory_agent.load_session(meta["session_id"])
+            if session.report:
+                total_cases += session.report.metrics.total
+                total_passes += session.report.metrics.passed
+                total_fails += session.report.metrics.failed
+                for tc in session.test_cases:
+                    if tc.status == "Fail":
+                        failed_cases_payload.append({
+                            "session": session.feature,
+                            "test_id": tc.id,
+                            "description": tc.description,
+                            "error": tc.error,
+                            "isolated_insight": tc.bug_insight
+                        })
+        except Exception:
+            continue
     
     insights = report_agent.generate_global_insights(failed_cases_payload)
     
