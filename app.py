@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+import re
 from flask import Flask, render_template, request, jsonify
 
 from utils.models import TestSession
@@ -9,14 +10,31 @@ from agents.automation_executor_agent import AutomationExecutorAgent
 from agents.report_analysis_agent import ReportAndAnalysisAgent
 from agents.memory_manager_agent import MemoryManagerAgent
 
+# Import NEW Agents
+from agents.form_understanding_agent import FormUnderstandingAgent
+from agents.root_cause_analyzer_agent import RootCauseAnalyzerAgent
+from agents.reporting_agent import ReportingAgent
+from agents.performance_testing_agent import PerformanceTestingAgent
+from agents.multi_language_agent import MultiLanguageAgent
+from agents.data_driven_testing_agent import DataDrivenTestingAgent
+from agents.model_selector_agent import ModelSelectorAgent
+
 app = Flask(__name__, template_folder="ui/templates", static_folder="ui/static")
 
-# Initialize Agents
+# Initialize Pipeline Base Agents
 generator_agent = TestCaseGeneratorAgent()
 executor_agent = AutomationExecutorAgent()
-report_agent = ReportAndAnalysisAgent()
+report_agent = ReportAndAnalysisAgent() 
 memory_agent = MemoryManagerAgent()
 
+# Initialize NEW Agents
+form_agent = FormUnderstandingAgent()
+rca_agent = RootCauseAnalyzerAgent()
+new_reporter = ReportingAgent()
+perf_agent = PerformanceTestingAgent()
+lang_agent = MultiLanguageAgent()
+data_driven_agent = DataDrivenTestingAgent()
+model_selector = ModelSelectorAgent()
 
 @app.route("/")
 def index():
@@ -24,7 +42,6 @@ def index():
 
 @app.route("/api/sessions", methods=["GET"])
 def get_sessions():
-    """Returns a lightweight list of all test sessions"""
     try:
         sessions = memory_agent.list_all_sessions()
         return jsonify(sessions)
@@ -33,7 +50,6 @@ def get_sessions():
 
 @app.route("/api/sessions/<session_id>", methods=["GET"])
 def get_session(session_id):
-    """Fetch full session details including cases and reports"""
     try:
         session = memory_agent.load_session(session_id)
         return jsonify(session.model_dump())
@@ -48,179 +64,9 @@ def delete_session(session_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/generate", methods=["POST"])
-def generate_tests():
-    data = request.json
-    feature_raw = data.get("feature", "")
-    
-    if not feature_raw:
-        return jsonify({"error": "Feature description is required."}), 400
-
-    words = feature_raw.split()
-    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
-
-    session_id = str(uuid.uuid4())
-    
-    try:
-        # Agent 1: Generate Test Cases
-        test_cases = generator_agent.generate(feature)
-        
-        # Create Session Object
-        session = TestSession(
-            session_id=session_id,
-            feature=feature,
-            state="GENERATED",
-            timestamp=time.time(),
-            test_cases=test_cases
-        )
-        
-        # Agent 4: Store in Memory
-        memory_agent.save_session(session)
-            
-        return jsonify({
-            "message": "Test Cases Generated Successfully",
-            "session": session.model_dump()
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/execute/<session_id>", methods=["POST"])
-def execute_session(session_id):
-    environment = request.json.get("environment", "web")
-    
-    try:
-        # Load from DB
-        session = memory_agent.load_session(session_id)
-        
-        if not session.test_cases:
-            return jsonify({"error": "No test cases found in this session."}), 400
-            
-        # Agent 2: Execution
-        executor_agent.mode = environment 
-        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
-        
-        # Update session with executed test cases
-        session.test_cases = updated_cases
-        session.state = "EXECUTED"
-        memory_agent.save_session(session)
-        
-        # Agent 3: Analysis and Reporting
-        report = report_agent.analyze(session.test_cases, metrics)
-        session.report = report
-        
-        # Agent 4: Final Save to Memory
-        memory_agent.save_session(session)
-        
-        return jsonify({
-            "message": "Automation Execution Complete",
-            "session": session.model_dump()
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/execute_direct", methods=["POST"])
-def execute_direct():
-    data = request.json
-    feature_raw = data.get("feature", "Direct Automated Execution")
-    words = feature_raw.split()
-    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
-    environment = data.get("environment", "web")
-    raw_cases = data.get("test_cases", [])
-    
-    if not raw_cases:
-        return jsonify({"error": "No test cases provided."}), 400
-
-    from utils.models import TestCase
-    
-    test_cases = []
-    for rc in raw_cases:
-        try:
-            tc = TestCase(**rc)
-            test_cases.append(tc)
-        except Exception as e:
-            return jsonify({"error": f"Invalid test case schema: {str(e)}"}), 400
-            
-    session_id = str(uuid.uuid4())
-    
-    try:
-        session = TestSession(
-            session_id=session_id,
-            feature=feature,
-            state="GENERATED",
-            timestamp=time.time(),
-            test_cases=test_cases
-        )
-        memory_agent.save_session(session)
-        
-        executor_agent.mode = environment 
-        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
-        
-        session.test_cases = updated_cases
-        session.state = "EXECUTED"
-        memory_agent.save_session(session)
-        
-        report = report_agent.analyze(session.test_cases, metrics)
-        session.report = report
-        
-        memory_agent.save_session(session)
-        
-        return jsonify({
-            "message": "Direct Execution Complete",
-            "session": session.model_dump()
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/zero_touch", methods=["POST"])
-def zero_touch_execute():
-    data = request.json
-    feature_raw = data.get("feature", "")
-    environment = data.get("environment", "web")
-    
-    if not feature_raw:
-        return jsonify({"error": "Feature description is required."}), 400
-
-    words = feature_raw.split()
-    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
-
-    session_id = str(uuid.uuid4())
-    try:
-        # Phase 1: Generate
-        test_cases = generator_agent.generate(feature)
-        session = TestSession(
-            session_id=session_id,
-            feature=feature,
-            state="GENERATED",
-            timestamp=time.time(),
-            test_cases=test_cases
-        )
-        memory_agent.save_session(session)
-        
-        # Phase 2: Execute Immediately
-        executor_agent.mode = environment 
-        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
-        session.test_cases = updated_cases
-        session.state = "EXECUTED"
-        memory_agent.save_session(session)
-        
-        # Phase 3: Reporting
-        report = report_agent.analyze(session.test_cases, metrics)
-        session.report = report
-        memory_agent.save_session(session)
-        
-        return jsonify({
-            "message": "Zero-Touch Execution Complete",
-            "session": session.model_dump()
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route("/api/reports/global_insights", methods=["GET"])
 def get_global_insights():
     session_metadata = memory_agent.list_all_sessions()
-    
     failed_cases_payload = []
     total_cases = 0
     total_passes = 0
@@ -244,9 +90,7 @@ def get_global_insights():
                         })
         except Exception:
             continue
-    
     insights = report_agent.generate_global_insights(failed_cases_payload)
-    
     return jsonify({
         "total_evaluated": total_cases,
         "pass_rate": round(total_passes/total_cases*100, 1) if total_cases > 0 else 0,
@@ -256,49 +100,192 @@ def get_global_insights():
         "ai_suggestions": insights.get("ai_suggestions", "")
     })
 
-@app.route("/api/url_auto", methods=["POST"])
-def execute_url_auto():
+# -------------------------------------------------------------
+# 🤖 UNIFIED INTELLIGENT ROUTING (Smart Input + Multi-Agent)
+# -------------------------------------------------------------
+@app.route("/api/smart_input", methods=["POST"])
+def smart_generate():
     data = request.json
-    url = data.get("url", "")
+    raw_prompt = data.get("prompt", "")
+    auto_run = data.get("autoRun", False)
+    env = data.get("environment", "web")
+    model_pref = data.get("model", "accurate")
+    target_lang = data.get("lang", "en-US")
     
-    if not url:
-        return jsonify({"error": "URL is required"}), 400
-        
+    if not raw_prompt:
+        return jsonify({"error": "Prompt field is required."}), 400
+
+    # Truncate Feature Name cleanly to 1-2 words
+    words = raw_prompt.split()
+    feature_name = " ".join(words[:2]) + "..." if len(words) > 2 else raw_prompt
+
     session_id = str(uuid.uuid4())
+    
     try:
-        from utils.automation_drivers import WebSeleniumDriver
-        driver = WebSeleniumDriver()
-        dom_map = driver.extract_dom_map(url)
-        driver.quit()
+        # MultiLanguage Adaptation
+        adapted_prompt = lang_agent.adapt_prompt_for_locale(raw_prompt, target_lang)
         
-        if "error" in dom_map:
-            raise Exception("Failed to map DOM: " + dom_map["error"])
+        # URL Autodetection
+        url_match = re.search(r'(https?://[^\s]+)', adapted_prompt)
+        
+        if url_match:
+            target_url = url_match.group(1)
+            # Agent 2: FormUnderstanding via Webscraper
+            from utils.automation_drivers import WebSeleniumDriver
+            driver = WebSeleniumDriver()
+            dom_map = {"error": "Driver failure"}
+            try:
+                dom_map = driver.extract_dom_map(target_url)
+                driver.quit()
+                if "error" in dom_map: raise Exception(dom_map["error"])
+            except Exception as e:
+                try: driver.quit()
+                except: pass
+                raise Exception("DOM extraction failed: " + str(e))
+                
+            clean_dom = form_agent.analyze_dom(target_url, dom_map)
+            test_cases = generator_agent.generate_from_url_dom(target_url, clean_dom)
+            feature_name = f"DOM Scrape: {target_url}"
+        else:
+            # Standard Generation
+            test_cases = generator_agent.generate(adapted_prompt)
             
-        test_cases = generator_agent.generate_from_url_dom(url, dom_map)
-        
         session = TestSession(
             session_id=session_id,
-            feature=f"URL Scrape: {url}",
+            feature=feature_name,
             state="GENERATED",
             timestamp=time.time(),
             test_cases=test_cases
         )
         memory_agent.save_session(session)
         
-        executor_agent.mode = "web"
+        # ⚡ Optional Immedate Execution
+        if auto_run:
+            start_t = time.time()
+            executor_agent.mode = env
+            updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+            end_t = time.time()
+            
+            # Post-Execution Advanced Analytics (RootCause & Performance)
+            for tc in updated_cases:
+                if tc.status == "Fail" and tc.error:
+                    tc.bug_insight = rca_agent.analyze_failure(tc.id, tc.error)
+                    
+            session.test_cases = updated_cases
+            session.state = "EXECUTED"
+            
+            perf_insight = perf_agent.evaluate_performance([end_t - start_t])
+            legacy_report = report_agent.analyze(session.test_cases, metrics)
+            legacy_report.executive_summary += f" | ⚡ Perf Status: {perf_insight['status']} ({perf_insight['average_time_seconds']}s)"
+            session.report = legacy_report
+            
+        memory_agent.save_session(session)
+        return jsonify({"message": "Pipeline Complete", "session": session.model_dump()})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/execute/<session_id>", methods=["POST"])
+def execute_session(session_id):
+    """Executes a previously Generated session (For Manual Approvals)"""
+    environment = request.json.get("environment", "web")
+    try:
+        session = memory_agent.load_session(session_id)
+        if not session.test_cases:
+            return jsonify({"error": "No test cases found in this session."}), 400
+            
+        start_t = time.time()
+        executor_agent.mode = environment 
         updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        end_t = time.time()
+        
+        for tc in updated_cases:
+            if tc.status == "Fail" and tc.error:
+                tc.bug_insight = rca_agent.analyze_failure(tc.id, tc.error)
+                
         session.test_cases = updated_cases
         session.state = "EXECUTED"
+        
+        perf_insight = perf_agent.evaluate_performance([end_t - start_t])
+        legacy_report = report_agent.analyze(session.test_cases, metrics)
+        legacy_report.executive_summary += f" | ⚡ Perf Status: {perf_insight['status']} ({perf_insight['average_time_seconds']}s)"
+        session.report = legacy_report
+        
+        memory_agent.save_session(session)
+        return jsonify({"message": "Execution Complete", "session": session.model_dump()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# -------------------------------------------------------------
+# 🏢 UNTOUCHED AUTOMATION TAB PRESERVED (Direct + DataDriven)
+# -------------------------------------------------------------
+@app.route("/api/execute_direct", methods=["POST"])
+def execute_direct():
+    data = request.json
+    feature_raw = data.get("feature", "Direct Execution")
+    words = feature_raw.split()
+    feature = " ".join(words[:2]) + "..." if len(words) > 2 else feature_raw
+    environment = data.get("environment", "web")
+    raw_cases = data.get("test_cases", [])
+    
+    if not raw_cases:
+        return jsonify({"error": "No test cases provided."}), 400
+
+    from utils.models import TestCase
+    test_cases = []
+    for rc in raw_cases:
+        try:
+            tc = TestCase(**rc)
+            test_cases.append(tc)
+        except Exception as e:
+            return jsonify({"error": f"Invalid test case schema: {str(e)}"}), 400
+            
+    session_id = str(uuid.uuid4())
+    try:
+        session = TestSession(
+            session_id=session_id,
+            feature=feature,
+            state="GENERATED",
+            timestamp=time.time(),
+            test_cases=test_cases
+        )
         memory_agent.save_session(session)
         
-        report = report_agent.analyze(session.test_cases, metrics)
-        session.report = report
-        memory_agent.save_session(session)
+        start_t = time.time()
+        executor_agent.mode = environment 
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        end_t = time.time()
         
-        return jsonify({
-            "message": "URL Full Automation Complete",
-            "session": session.model_dump()
-        })
+        for tc in updated_cases:
+            if tc.status == "Fail" and tc.error:
+                tc.bug_insight = rca_agent.analyze_failure(tc.id, tc.error)
+                
+        session.test_cases = updated_cases
+        session.state = "EXECUTED"
+        
+        perf_insight = perf_agent.evaluate_performance([end_t - start_t])
+        legacy_report = report_agent.analyze(session.test_cases, metrics)
+        legacy_report.executive_summary += f" | ⚡ Perf Status: {perf_insight['status']}"
+        session.report = legacy_report
+        
+        memory_agent.save_session(session)
+        return jsonify({"message": "Direct Execution Complete", "session": session.model_dump()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/data_driven", methods=["POST"])
+def execute_data_driven():
+    """Allows CSV parsing to execute multi-variant tests inside Automation tab."""
+    data = request.json
+    csv_payload = data.get("csv", "")
+    environment = data.get("environment", "web")
+    
+    if not csv_payload:
+        return jsonify({"error": "CSV mapping empty."}), 400
+        
+    try:
+        variants = data_driven_agent.parse_payload(csv_payload)
+        return jsonify({"variants_loaded": len(variants), "message": f"Successfully mapped {len(variants)} Data-Driven test scenarios."})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

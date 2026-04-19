@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AbhiMate Platform</title>
+    <title>AbhiMate Platform - Multi-Agent QA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,8 +15,14 @@
     <!-- TOP NAVIGATION -->
     <header class="top-nav">
         <div class="nav-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"
-                class="logo">
+            <button id="sidebarToggle" class="nav-toggle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="margin-left: 10px;" class="logo">
                 <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
                 <polyline points="2 17 12 22 22 17"></polyline>
                 <polyline points="2 12 12 17 22 12"></polyline>
@@ -24,78 +30,158 @@
             <h2>AbhiMate QA</h2>
         </div>
         <div class="nav-tabs">
-            <button class="nav-tab active" data-target="dashboardView">Dashboard</button>
-            <button class="nav-tab" data-target="reportsView">Reports & Analysis</button>
-            <button class="nav-tab" data-target="automatedView">Automated</button>
-            <button class="nav-tab" data-target="urlAutoView">URL Auto Testing</button>
+            <button class="nav-tab active" data-target="dashboardView">Manual Test Case</button>
+            <button class="nav-tab" data-target="automatedView">Automation Suite</button>
+            <button class="nav-tab" data-target="globalStatsView">Global Dashboard</button>
         </div>
         <div class="nav-actions">
+            <select id="langSelect" class="env-dropdown">
+                <option value="en-US">UI: English (US)</option>
+                <option value="fr-FR">UI: French</option>
+                <option value="es-ES">UI: Spanish</option>
+            </select>
+            <select id="modelSelect" class="env-dropdown">
+                <option value="accurate">Model: Accurate (70B)</option>
+                <option value="fast">Model: Fast (8B)</option>
+            </select>
             <select id="envSelect" class="env-dropdown">
-                <option value="web">Environment: Web (Selenium)</option>
-                <option value="android" disabled>Environment: Android (Coming Soon)</option>
+                <option value="web">Env: Web</option>
+                <option value="android" disabled>Env: Android</option>
             </select>
         </div>
     </header>
 
     <div class="layout-wrapper">
-        <!-- LEFT SIDEBAR (Only Test Sessions) -->
-        <aside class="sidebar">
-            <button id="newSessionBtn" class="btn primary-btn">+ New Session</button>
-            <div class="sidebar-list-container">
-                <h4 class="sidebar-title">Recent Sessions</h4>
-                <ul id="sessionList" class="session-list">
-                    <!-- Session items injected here -->
-                </ul>
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar" id="mainSidebar">
+            <div class="sidebar-content-wrapper" style="gap: 15px;">
+                <button id="newSessionBtn" class="btn primary-btn">+ New Session</button>
+                
+                <button id="navToReportsBtn" class="btn" style="background: rgba(56,189,248,0.1); border: 1px solid var(--accent); color: var(--accent); width: 100%; transition: 0.3s; margin-bottom: 10px;">📊 View Analysis & Reports</button>
+
+                <div class="sidebar-list-container" style="margin-top: 0;">
+                    <h4 class="sidebar-title">Session History</h4>
+                    <ul id="sessionList" class="session-list">
+                        <!-- Session items injected here -->
+                    </ul>
+                </div>
             </div>
         </aside>
 
         <!-- MAIN SCREEN -->
         <main class="main-content">
 
-            <!-- DASHBOARD VIEW -->
+            <!-- 1. MANUAL TEST CASE VIEW (Formerly Dashboard View) -->
             <div id="dashboardView" class="view-panel active-view">
-                <!-- Welcome OR Active Session Details -->
-                <div id="welcomeState">
-                    <h1>Welcome to AbhiMate</h1>
-                    <p class="subtitle">Enter a feature below to trigger the 4-Agent QA Pipeline.</p>
+                
+                <div id="welcomeState" style="margin-top: 10vh; text-align: center;">
+                    <h1>Manual AI Test Generator</h1>
+                    <p class="subtitle" style="max-width: 600px; margin: 10px auto;">Enter a feature description or product URL. AI will build your testing suite.</p>
                 </div>
 
                 <div id="activeSessionState" class="hidden">
                     <h2 id="activeSessionTitle" class="session-title">...</h2>
-                    <div class="status-badge" id="activeSessionStatus">GENERATED</div>
+                    <div class="status-badge" id="activeSessionStatus">PIPELINE RUNNING</div>
 
                     <div class="test-cases-list" id="testCasesContainer">
                         <!-- Test Cases injected here -->
                     </div>
 
-                    <div id="automationPrompt" class="automation-prompt panel hidden">
-                        <h3>Human in the Loop Pause</h3>
-                        <p>The TestCaseGeneratorAgent has prepared the test suite.</p>
-                        <p>Do you want to run these tests via the AutomationExecutorAgent now?</p>
-                        <div class="prompt-actions">
-                            <button id="runAutomationBtn" class="btn primary-btn">Execute Tests</button>
-                        </div>
+                    <div id="automationPrompt" class="hidden" style="margin-top:20px; text-align:center;">
+                        <button id="runAutomationBtn" class="btn primary-btn">Force Execute Remaining Tests</button>
                     </div>
                 </div>
 
-                <!-- Input fixed to bottom of Dashboard -->
                 <div class="input-area">
                     <div class="input-box">
-                        <textarea id="featureInput" placeholder="Describe the feature or UI requirement..."></textarea>
+                        <textarea id="featureInput" placeholder="Describe feature (English/Hinglish) OR paste URL (e.g. https://amazon.in)"></textarea>
                         <button id="generateBtn" class="send-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="22" y1="2" x2="11" y2="13"></line>
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                             </svg>
                         </button>
                     </div>
+                    <div class="input-options">
+                        <label>
+                            <input type="checkbox" id="autoExecuteCheck"> 
+                            Generate + Run Automatic Execution Pipeline
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. AUTOMATION SUITE -->
+            <div id="automatedView" class="view-panel">
+                <div style="max-width: 850px; margin: 4vh auto 0; text-align: center;">
+                    <h1 style="background: linear-gradient(90deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; font-size: 2.2rem; margin-bottom: 5px;">Automation Pipeline Hub</h1>
+                    <p class="subtitle">Direct API execution interface. Manual test executions or Data-Driven injections happen here.</p>
+
+                    <div class="test-case-card" style="margin-top: 3rem; text-align: left; border: 1px solid rgba(56,189,248,0.2); background: linear-gradient(145deg, rgba(30,30,30,0.8) 0%, rgba(18,18,18,0.9) 100%);">
+                        <h3 style="color: #fff; margin-bottom: 5px;">Unified Execution Runner</h3>
+                        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:20px;">Enter your test instructions as plain text <b style="color:var(--accent)">OR</b> upload a CSV file.</p>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="color: var(--accent); font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; display: block;">1. Text-Based Manual Tests / Instructions</label>
+                            <textarea id="unifiedTextInput" style="width: 100%; height: 160px; background: rgba(0,0,0,0.3); color: #4ade80; font-family: 'Inter', sans-serif; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; resize: vertical; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); outline: none; transition: border-color 0.3s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='rgba(255,255,255,0.05)'" placeholder="Enter your manual test scripts or natural language instructions here..."></textarea>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <label style="color: var(--accent); font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; display: block;">2. File Upload (Optional CSV dataset)</label>
+                            <input type="file" id="unifiedFileInput" accept=".csv" style="color: #fff; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; width: 100%; border: 1px dashed rgba(255,255,255,0.2); outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='rgba(255,255,255,0.2)'">
+                        </div>
+
+                        <button id="runUnifiedAutoBtn" class="primary-btn" style="padding: 14px 24px; font-size: 1.05rem; background: linear-gradient(45deg, var(--accent), #2563eb); color: #fff; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; width: 100%; box-shadow: 0 4px 15px rgba(56,189,248,0.3); transition: 0.3s;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                Inject &amp; Execute Automation
+                            </div>
+                        </button>
+                        <p id="unifiedAutoStatus" style="margin-top: 15px; color: var(--accent); font-weight: bold; text-align: center;"></p>
+                    </div>
+                    
+                    <!-- Dedicated Container for Automation Run Results -->
+                    <div id="automationResultsContainer" class="hidden" style="margin-top: 30px; text-align: left;">
+                        <!-- Test cases inline for automation tab rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. GLOBAL DASHBOARD VIEW (NEW ISOLATED TAB) -->
+            <div id="globalStatsView" class="view-panel">
+                <div style="margin-bottom: 2rem;">
+                    <h1>System Health & Execution Insights</h1>
+                    <p class="subtitle">Cumulative tracking across all test pipelines and AI agents.</p>
+                </div>
+                
+                <div class="dashboard-metrics" id="globalMetricsPanel">
+                    <div class="stat-box">
+                        <h4>Total Tests</h4>
+                        <div class="stat-val" id="mTotal">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Pass Rate</h4>
+                        <div class="stat-val" id="mPassRate" style="color: var(--pass);">0%</div>
+                    </div>
+                    <div class="stat-box">
+                        <h4>AI Insights Detected</h4>
+                        <div class="stat-val" id="mBugs">0</div>
+                    </div>
+                </div>
+                
+                <div class="test-case-card" style="margin-top: 40px; text-align: center;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="margin-bottom:20px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <h2>Welcome to the Global Hub</h2>
+                    <p style="color:var(--text-secondary); max-width:500px; margin:10px auto;">This dashboard serves strictly to monitor macro-level insights. Use the Manual Test Case or Automation Suite tabs at the top to build and run test sessions.</p>
                 </div>
             </div>
 
             <!-- REPORTS VIEW -->
             <div id="reportsView" class="view-panel">
-                <h1>Report & Analysis Dashboard</h1>
+                <h1>Report & Analysis Matrix</h1>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
                     <p class="subtitle" style="margin: 0;">Select a targeted session to view granular analytical logs.</p>
                     <select id="reportSessionSelect" class="env-dropdown" style="min-width: 300px; padding: 10px; border-radius: 6px;">
@@ -104,12 +190,6 @@
                 </div>
 
                 <div id="reportContentArea" class="hidden">
-                    <div class="metrics-row" style="margin-bottom: 2rem;">
-                        <div class="metric total">Total: <span id="rTotal">0</span></div>
-                        <div class="metric pass">Passed: <span id="rPass">0</span></div>
-                        <div class="metric fail">Failed: <span id="rFail">0</span></div>
-                    </div>
-
                     <div style="display: flex; gap: 2rem; margin-bottom: 2rem; align-items: stretch;">
                         <div class="test-case-card" style="flex: 0 0 250px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
                             <h3 style="margin-bottom: 15px;">Health Status</h3>
@@ -124,7 +204,7 @@
                     </div>
 
                     <div class="test-case-card" style="margin-bottom: 2rem;">
-                        <h3 style="color:var(--fail);">Developer Failure Logs & Triage Details</h3>
+                        <h3 style="color:var(--fail);">Developer Failure Logs & Root Cause Analysis</h3>
                         <ul id="rLogsList" style="list-style: none; padding: 0; margin-top: 15px;">
                         </ul>
                     </div>
@@ -135,55 +215,7 @@
                 </div>
             </div>
 
-            <!-- AUTOMATED (DIRECT EXECUTION) VIEW -->
-            <div id="automatedView" class="view-panel">
-                <h1>Automated Execution Pipelines</h1>
-                <p class="subtitle">Bypass AI human-in-the-loop pauses.</p>
-
-                <div class="test-case-card" style="margin-top: 2rem;">
-                    <h3>Zero-Touch Automation</h3>
-                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:15px;">Describe a feature.
-                        The AI will generate test cases AND execute them back-to-back automatically.</p>
-                    <textarea id="zeroTouchInput"
-                        style="width: 100%; height: 100px; background: var(--bg-darker); color: #fff; border: 1px solid var(--glass-border); border-radius: 6px; padding: 10px; resize: vertical;"
-                        placeholder="For example: Search feature on the e-commerce home page..."></textarea>
-
-                    <button id="zeroTouchBtn" class="btn primary-btn" style="margin-top: 15px;">Generate & Run
-                        Automatically</button>
-                    <p id="zeroTouchStatus" style="margin-top: 10px; color: var(--accent); font-weight: bold;"></p>
-                </div>
-
-                <div class="test-case-card" style="margin-top: 2rem;">
-                    <h3>Direct JSON Runner</h3>
-                    <div style="margin-bottom: 10px; color: var(--accent);">Feature Name (Optional)</div>
-                    <input type="text" id="directFeatureInput" class="env-dropdown"
-                        style="width: 100%; margin-bottom: 20px;" placeholder="e.g. Existing Login Suite">
-
-                    <div style="margin-bottom: 10px; color: var(--accent);">Paste Valid JSON Array here</div>
-                    <textarea id="directJsonInput"
-                        style="width: 100%; height: 250px; background: #000; color: #4ade80; font-family: monospace; border: 1px solid var(--glass-border); border-radius: 6px; padding: 10px; resize: vertical;"
-                        placeholder='[\n  {\n    "id": "TC001",\n    "type": "Positive",\n    "description": "...",\n    "steps": [],\n    "selenium_action": "...",\n    "expected": "..."\n  }\n]'></textarea>
-
-                    <button id="directRunBtn" class="btn primary-btn" style="margin-top: 20px;">Execute Suite
-                        Instantly</button>
-                    <p id="directStatus" style="margin-top: 10px; color: var(--accent); font-weight: bold;"></p>
-                </div>
-            </div>
-
         </main>
-
-        <!-- URL AUTO TESTING VIEW -->
-        <div id="urlAutoView" class="view-panel">
-            <h1>URL Auto Testing</h1>
-            <p class="subtitle">Full automation. Provide a URL, I'll scrape it, interpret fields, generate the exact test models natively, and run them securely.</p>
-            <div class="test-case-card" style="margin-top: 2rem; max-width: 800px;">
-                <div style="margin-bottom: 10px; color: var(--accent);">Target Server URL Endpoint</div>
-                <input type="url" id="urlAutoInput" class="env-dropdown" style="width: 100%; margin-bottom: 20px;" placeholder="e.g. https://amazon.in or https://github.com/login">
-                
-                <button id="urlAutoBtn" class="btn primary-btn" style="margin-top: 10px; font-size: 1.1rem; padding: 12px 24px;">Scrape & Run End-to-End</button>
-                <p id="urlAutoStatus" style="margin-top: 15px; color: var(--accent); font-weight: bold;"></p>
-            </div>
-        </div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

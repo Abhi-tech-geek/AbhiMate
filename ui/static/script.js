@@ -5,6 +5,7 @@ const sessionList = document.getElementById('sessionList');
 const newSessionBtn = document.getElementById('newSessionBtn');
 const featureInput = document.getElementById('featureInput');
 const generateBtn = document.getElementById('generateBtn');
+const autoExecuteCheck = document.getElementById('autoExecuteCheck');
 
 const welcomeState = document.getElementById('welcomeState');
 const activeSessionState = document.getElementById('activeSessionState');
@@ -13,11 +14,16 @@ const activeSessionStatus = document.getElementById('activeSessionStatus');
 const testCasesContainer = document.getElementById('testCasesContainer');
 const automationPrompt = document.getElementById('automationPrompt');
 const runAutomationBtn = document.getElementById('runAutomationBtn');
-const envSelect = document.getElementById('envSelect');
+const automationResultsContainer = document.getElementById('automationResultsContainer');
 
-const globalReportsContainer = document.getElementById('globalReportsContainer');
-const modal = document.getElementById('reportModal');
-const closeModalBtn = document.querySelector('.close-modal');
+const sidebarToggle = document.getElementById('sidebarToggle');
+const mainSidebar = document.getElementById('mainSidebar');
+const navToReportsBtn = document.getElementById('navToReportsBtn');
+
+// Nav/Settings Elements
+const langSelect = document.getElementById('langSelect');
+const modelSelect = document.getElementById('modelSelect');
+const envSelect = document.getElementById('envSelect');
 
 // Tabs
 const navTabs = document.querySelectorAll('.nav-tab');
@@ -25,6 +31,7 @@ const viewPanels = document.querySelectorAll('.view-panel');
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSessions();
+    loadGlobalInsights();
 });
 
 // Navigation Logic
@@ -36,20 +43,41 @@ navTabs.forEach(tab => {
         tab.classList.add('active');
         document.getElementById(tab.dataset.target).classList.add('active-view');
         
-        if (tab.dataset.target === 'reportsView') {
-            initReportsDashboard();
+        if (tab.dataset.target === 'globalStatsView') {
+            loadGlobalInsights();
         }
     });
+});
+
+navToReportsBtn.addEventListener('click', () => {
+    navTabs.forEach(t => t.classList.remove('active'));
+    viewPanels.forEach(p => p.classList.remove('active-view'));
+    document.getElementById('reportsView').classList.add('active-view');
+    initReportsDashboard();
+});
+
+sidebarToggle.addEventListener('click', () => {
+    mainSidebar.classList.toggle('collapsed');
 });
 
 // Session Management
 newSessionBtn.addEventListener('click', () => {
     currentSessionId = null;
     featureInput.value = '';
+    
+    // Clear Manual View Context
     welcomeState.classList.remove('hidden');
     activeSessionState.classList.add('hidden');
+    testCasesContainer.innerHTML = '';
+    activeSessionTitle.innerText = '...';
+    activeSessionStatus.innerText = '';
+    automationPrompt.classList.add('hidden');
+    
+    // Clear Automation View Context
+    automationResultsContainer.innerHTML = '';
+    automationResultsContainer.classList.add('hidden');
+    
     document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
-    document.querySelector('[data-target="dashboardView"]').click();
 });
 
 async function loadSessions() {
@@ -81,22 +109,36 @@ async function loadSessions() {
     }
 }
 
+async function loadGlobalInsights() {
+    try {
+        const res = await fetch('/api/reports/global_insights');
+        const stats = await res.json();
+        document.getElementById('mTotal').innerText = stats.total_evaluated || 0;
+        document.getElementById('mPassRate').innerText = `${stats.pass_rate || 0}%`;
+        document.getElementById('mBugs').innerText = (stats.most_failing_tests || []).length;
+    } catch (e) {
+        console.error("Stats fetching failed.", e);
+    }
+}
+
 async function deleteSession(id, listElement) {
     if(!confirm("Are you sure you want to delete this session?")) return;
     try {
         await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
         listElement.remove();
         if(currentSessionId === id) newSessionBtn.click();
+        loadGlobalInsights();
     } catch(err) {
         console.error(err);
     }
 }
 
 async function loadSessionData(id) {
+    // History clicks ALWAYS load into the Manual Test Case tab (dashboardView previously).
     document.querySelector('[data-target="dashboardView"]').click();
     welcomeState.classList.add('hidden');
     activeSessionState.classList.remove('hidden');
-    testCasesContainer.innerHTML = 'Loading...';
+    testCasesContainer.innerHTML = 'Loading AI Pipeline Data...';
     automationPrompt.classList.add('hidden');
     currentSessionId = id;
 
@@ -107,19 +149,21 @@ async function loadSessionData(id) {
         activeSessionTitle.innerText = session.feature;
         activeSessionStatus.innerText = session.state;
         
-        renderTestCases(session.test_cases);
+        renderTestCases(session.test_cases, testCasesContainer);
         
         if (session.state === 'GENERATED') {
             automationPrompt.classList.remove('hidden');
         } else if (session.state === 'EXECUTED' && session.report) {
-            renderReportInline(session.report);
+            renderReportInline(session.report, testCasesContainer);
         }
     } catch (err) {
-        testCasesContainer.innerHTML = 'Error loading session data.';
+        testCasesContainer.innerHTML = 'Error loading session structural data.';
     }
 }
 
-// Generating Tests
+// -------------------------------------------------------------
+// UNIFIED INTELLIGENT SMART GENERATE
+// -------------------------------------------------------------
 generateBtn.addEventListener('click', async () => {
     const text = featureInput.value.trim();
     if(!text) return;
@@ -127,31 +171,46 @@ generateBtn.addEventListener('click', async () => {
     welcomeState.classList.add('hidden');
     activeSessionState.classList.remove('hidden');
     activeSessionTitle.innerText = text;
-    activeSessionStatus.innerText = "GENERATING...";
-    testCasesContainer.innerHTML = '<p style="color:var(--text-secondary)">TestCaseGeneratorAgent is creating the suite...</p>';
+    activeSessionStatus.innerText = "PIPELINE RUNNING (MULTI-AGENT ENABLED)";
+    testCasesContainer.innerHTML = '<p style="color:var(--text-secondary)">Agents are assembling test arrays... Please wait.</p>';
     automationPrompt.classList.add('hidden');
     featureInput.value = '';
 
+    const payload = {
+        prompt: text,
+        autoRun: autoExecuteCheck.checked,
+        environment: envSelect.value,
+        model: modelSelect.value,
+        lang: langSelect.value
+    };
+
     try {
-        const res = await fetch('/api/generate', {
+        const res = await fetch('/api/smart_input', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ feature: text })
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
         if(data.error) throw new Error(data.error);
 
         currentSessionId = data.session.session_id;
         activeSessionStatus.innerText = data.session.state;
-        renderTestCases(data.session.test_cases);
-        automationPrompt.classList.remove('hidden');
+        renderTestCases(data.session.test_cases, testCasesContainer);
+        
+        if(data.session.state === "EXECUTED" && data.session.report) {
+            renderReportInline(data.session.report, testCasesContainer);
+        } else {
+            automationPrompt.classList.remove('hidden');
+        }
+        
         loadSessions();
+        loadGlobalInsights();
     } catch (err) {
         testCasesContainer.innerHTML = `<p style="color:var(--fail)">${err.message}</p>`;
     }
 });
 
-// Executing Tests
+// Force Executing Tests (Manual trigger)
 runAutomationBtn.addEventListener('click', async () => {
     if(!currentSessionId) return;
     const env = envSelect.value;
@@ -169,9 +228,9 @@ runAutomationBtn.addEventListener('click', async () => {
         if(data.error) throw new Error(data.error);
         
         activeSessionStatus.innerText = data.session.state;
-        renderTestCases(data.session.test_cases);
-        if(data.session.report) renderReportInline(data.session.report);
-        
+        renderTestCases(data.session.test_cases, testCasesContainer);
+        if(data.session.report) renderReportInline(data.session.report, testCasesContainer);
+        loadGlobalInsights();
     } catch (err) {
         alert(err.message);
         activeSessionStatus.innerText = "GENERATED (Failed Execution)";
@@ -180,19 +239,19 @@ runAutomationBtn.addEventListener('click', async () => {
 });
 
 // Rendering UI
-function renderTestCases(cases) {
+function renderTestCases(cases, containerElement) {
     if(!cases || cases.length === 0) {
-        testCasesContainer.innerHTML = 'No test cases generated.';
+        containerElement.innerHTML = 'No test cases generated.';
         return;
     }
-    testCasesContainer.innerHTML = '';
+    containerElement.innerHTML = '';
     cases.forEach(tc => {
         let statusBadge = tc.status === 'Pass' ? `<span style="color:var(--pass)">[PASS]</span>` : 
                           tc.status === 'Fail' ? `<span style="color:var(--fail)">[FAIL]</span>` : 
                           `<span style="color:var(--text-secondary)">[${tc.status}]</span>`;
                           
         let errorMarkup = tc.error ? `<div style="color:var(--fail); margin-top:10px;">Error: ${tc.error}</div>` : "";
-        let aiInsight = tc.bug_insight ? `<div style="background:rgba(239, 68, 68, 0.1); padding:10px; border-left:3px solid var(--fail); margin-top:10px; font-size:0.9rem;"><strong>AI Analysis:</strong> ${tc.bug_insight}</div>` : "";
+        let aiInsight = tc.bug_insight ? `<div style="background:rgba(239, 68, 68, 0.1); padding:10px; border-left:3px solid var(--fail); margin-top:10px; font-size:0.9rem;"><strong>AI Advanced Analysis:</strong> ${tc.bug_insight}</div>` : "";
 
         const html = `
             <div class="test-case-card">
@@ -214,14 +273,14 @@ function renderTestCases(cases) {
                 </details>
             </div>
         `;
-        testCasesContainer.insertAdjacentHTML('beforeend', html);
+        containerElement.insertAdjacentHTML('beforeend', html);
     });
 }
 
-function renderReportInline(report) {
+function renderReportInline(report, containerElement) {
     const html = `
         <div style="background:var(--bg-panel); border:1px solid var(--glass-border); padding:1.5rem; border-radius:12px; margin-top:2rem;">
-            <h3 style="color:var(--accent); margin-bottom:15px;">Executive Report</h3>
+            <h3 style="color:var(--accent); margin-bottom:15px;">Reporting Agent Summary</h3>
             <div style="display:flex; gap:20px; margin-bottom:15px;">
                 <div style="font-size:1.5rem; font-weight:bold;">Total: ${report.metrics.total}</div>
                 <div style="font-size:1.5rem; font-weight:bold; color:var(--pass);">Pass: ${report.metrics.passed}</div>
@@ -230,7 +289,7 @@ function renderReportInline(report) {
             <p>${report.executive_summary}</p>
         </div>
     `;
-    testCasesContainer.insertAdjacentHTML('beforeend', html);
+    containerElement.insertAdjacentHTML('beforeend', html);
 }
 
 // Reports View Logic
@@ -270,9 +329,6 @@ reportSessionSelect.addEventListener('change', async (e) => {
     document.getElementById('reportEmptyState').classList.add('hidden');
     document.getElementById('reportContentArea').classList.remove('hidden');
     
-    document.getElementById('rTotal').innerText = "Loading...";
-    document.getElementById('rPass').innerText = "...";
-    document.getElementById('rFail').innerText = "...";
     document.getElementById('rSummary').innerText = "Analyzing payload...";
     document.getElementById('rLogsList').innerHTML = "";
     
@@ -285,10 +341,6 @@ reportSessionSelect.addEventListener('change', async (e) => {
         const report = session.report;
         
         if(!report) throw new Error("No report generated for this session.");
-        
-        document.getElementById('rTotal').innerText = report.metrics.total;
-        document.getElementById('rPass').innerText = report.metrics.passed;
-        document.getElementById('rFail').innerText = report.metrics.failed;
         
         window.healthChartInstance = new Chart(healthCtx, {
             type: 'doughnut',
@@ -310,146 +362,123 @@ reportSessionSelect.addEventListener('change', async (e) => {
         const failedCases = session.test_cases.filter(tc => tc.status === 'Fail');
         
         if(failedCases.length === 0) {
-            fContainer.innerHTML = '<li style="color:var(--text-secondary)">No failures detected. Perfect run!</li>';
+            fContainer.innerHTML = '<li style="color:var(--text-secondary)">No failures detected. System passes 100% stable parameters.</li>';
         } else {
             failedCases.forEach(fc => {
                 fContainer.insertAdjacentHTML('beforeend', `
                     <li style="background:rgba(255,255,255,0.05); padding:10px; border-left:3px solid var(--fail); margin-bottom:10px;">
                         <strong>${fc.id}</strong><br>
                         <span style="color:var(--text-secondary); font-size:0.85rem">Error: ${fc.error}</span><br>
-                        <span style="color:var(--accent); font-size:0.85rem">AI Insight: ${fc.bug_insight}</span>
+                        <span style="color:var(--accent); font-size:0.85rem">AI Root Cause Agent Insight: ${fc.bug_insight}</span>
                     </li>
                 `);
             });
         }
     } catch(err) {
-        document.getElementById('rSummary').innerText = err.message;
+        document.getElementById('rSummary').innerText = "Critical load issue: " + err.message;
     }
 });
 
 // -----------------------------------------
-// Automated (Direct Execution) Logic
+// Unified Automation Pipeline (Text + File)
 // -----------------------------------------
-const directFeatureInput = document.getElementById('directFeatureInput');
-const directJsonInput = document.getElementById('directJsonInput');
-const directRunBtn = document.getElementById('directRunBtn');
-const directStatus = document.getElementById('directStatus');
+const unifiedTextInput = document.getElementById('unifiedTextInput');
+const unifiedFileInput = document.getElementById('unifiedFileInput');
+const runUnifiedAutoBtn = document.getElementById('runUnifiedAutoBtn');
+const unifiedAutoStatus = document.getElementById('unifiedAutoStatus');
 
-directRunBtn.addEventListener('click', async () => {
-    const rawVal = directJsonInput.value.trim();
-    if (!rawVal) return;
-    
-    let parsedCases;
-    try {
-        parsedCases = JSON.parse(rawVal);
-        if(!Array.isArray(parsedCases)) throw new Error("JSON must be an array of test cases.");
-    } catch(err) {
-        directStatus.style.color = "var(--fail)";
-        directStatus.innerText = "Invalid JSON structure: " + err.message;
+runUnifiedAutoBtn.addEventListener('click', async () => {
+    unifiedAutoStatus.innerText = "";
+    runUnifiedAutoBtn.disabled = true;
+    automationResultsContainer.classList.add('hidden');
+    automationResultsContainer.innerHTML = '<p style="color:var(--text-secondary)">Executing via direct pipeline...</p>';
+
+    // Check File Upload First
+    if (unifiedFileInput.files.length > 0) {
+        const file = unifiedFileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const csvPayload = e.target.result.trim();
+            if (!csvPayload) {
+                unifiedAutoStatus.style.color = "var(--fail)";
+                unifiedAutoStatus.innerText = "Error: CSV file is empty.";
+                runUnifiedAutoBtn.disabled = false;
+                return;
+            }
+            unifiedAutoStatus.style.color = "var(--accent)";
+            unifiedAutoStatus.innerText = "DataDrivenTestingAgent parsing CSV file mapping...";
+            
+            try {
+                const res = await fetch('/api/data_driven', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ csv: csvPayload, environment: envSelect.value })
+                });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error);
+                
+                unifiedAutoStatus.style.color = "var(--pass)";
+                unifiedAutoStatus.innerText = data.message;
+            } catch (err) {
+                unifiedAutoStatus.style.color = "var(--fail)";
+                unifiedAutoStatus.innerText = "Execution failed: " + err.message;
+            } finally {
+                runUnifiedAutoBtn.disabled = false;
+                setTimeout(() => unifiedAutoStatus.innerText = "", 5000);
+            }
+        };
+        reader.readAsText(file);
         return;
     }
-    
-    const feat = directFeatureInput.value.trim() || "Automated Direct Execution";
-    const env = envSelect.value;
-    
-    directStatus.style.color = "var(--accent)";
-    directStatus.innerText = "Processing automation execution directly...";
-    directRunBtn.disabled = true;
-    
-    try {
-        const res = await fetch('/api/execute_direct', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ feature: feat, environment: env, test_cases: parsedCases })
-        });
-        const data = await res.json();
-        if(data.error) throw new Error(data.error);
-        
-        // Execution Complete, refresh sidebar and jump to Dashboard to show active session
-        document.querySelector('.nav-tab[data-target="dashboardView"]').click();
-        loadSessions();
-        setTimeout(() => loadSessionData(data.session.session_id), 100);
-        
-    } catch (err) {
-        directStatus.style.color = "var(--fail)";
-        directStatus.innerText = "Execution failed: " + err.message;
-    } finally {
-        directRunBtn.disabled = false;
-        directStatus.innerText = "";
+
+    // No file -> fallback to text input
+    const rawVal = unifiedTextInput.value.trim();
+    if (!rawVal) {
+        unifiedAutoStatus.style.color = "var(--fail)";
+        unifiedAutoStatus.innerText = "Please provide plain text instructions or upload a CSV file.";
+        runUnifiedAutoBtn.disabled = false;
+        setTimeout(() => unifiedAutoStatus.innerText = "", 3000);
+        return;
     }
-});
 
-// -----------------------------------------
-// Zero-Touch Automation Logic
-// -----------------------------------------
-const zeroTouchInput = document.getElementById('zeroTouchInput');
-const zeroTouchBtn = document.getElementById('zeroTouchBtn');
-const zeroTouchStatus = document.getElementById('zeroTouchStatus');
-
-zeroTouchBtn.addEventListener('click', async () => {
-    const feat = zeroTouchInput.value.trim();
-    if (!feat) return;
-    
-    zeroTouchStatus.style.color = "var(--accent)";
-    zeroTouchStatus.innerText = "Generating and Executing end-to-end automatically... Please wait.";
-    zeroTouchBtn.disabled = true;
+    unifiedAutoStatus.style.color = "var(--accent)";
+    unifiedAutoStatus.innerText = "Processing automation execution directly pipeline...";
+    automationResultsContainer.classList.remove('hidden');
     
     try {
-        const res = await fetch('/api/zero_touch', {
+        const payload = {
+            prompt: rawVal,
+            autoRun: true,
+            environment: envSelect.value,
+            model: modelSelect.value,
+            lang: langSelect.value
+        };
+
+        const res = await fetch('/api/smart_input', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ feature: feat, environment: envSelect.value })
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
         if(data.error) throw new Error(data.error);
         
-        // Zero-Touch Complete, refresh sidebar and jump to Dashboard to show active session
-        document.querySelector('.nav-tab[data-target="dashboardView"]').click();
-        loadSessions();
-        setTimeout(() => loadSessionData(data.session.session_id), 100);
+        unifiedAutoStatus.style.color = "var(--pass)";
+        unifiedAutoStatus.innerText = "Pipeline ran successfully.";
         
+        // Render IN-PLACE instead of jumping UI to dashboard
+        renderTestCases(data.session.test_cases, automationResultsContainer);
+        if(data.session.report) {
+            renderReportInline(data.session.report, automationResultsContainer);
+        }
+        
+        loadSessions(); // Updates sidebar history list
+        loadGlobalInsights();
     } catch (err) {
-        zeroTouchStatus.style.color = "var(--fail)";
-        zeroTouchStatus.innerText = "Zero-Touch failed: " + err.message;
+        unifiedAutoStatus.style.color = "var(--fail)";
+        unifiedAutoStatus.innerText = "Execution failed: " + err.message;
+        automationResultsContainer.innerHTML = `<p style="color:var(--fail)">Failed to parse or run cases: ${err.message}</p>`;
     } finally {
-        zeroTouchBtn.disabled = false;
-        setTimeout(() => zeroTouchStatus.innerText = "", 5000);
-    }
-});
-
-// -----------------------------------------
-// URL Auto Testing Logic
-// -----------------------------------------
-const urlAutoInput = document.getElementById('urlAutoInput');
-const urlAutoBtn = document.getElementById('urlAutoBtn');
-const urlAutoStatus = document.getElementById('urlAutoStatus');
-
-urlAutoBtn.addEventListener('click', async () => {
-    const targetUrl = urlAutoInput.value.trim();
-    if (!targetUrl) return;
-    
-    urlAutoStatus.style.color = "var(--accent)";
-    urlAutoStatus.innerText = "Initializing headless crawler... Harvesting DOM... Generative AI processing... Please wait.";
-    urlAutoBtn.disabled = true;
-    
-    try {
-        const res = await fetch('/api/url_auto', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ url: targetUrl })
-        });
-        const data = await res.json();
-        if(data.error) throw new Error(data.error);
-        
-        document.querySelector('.nav-tab[data-target="dashboardView"]').click();
-        loadSessions();
-        setTimeout(() => loadSessionData(data.session.session_id), 100);
-        
-    } catch (err) {
-        urlAutoStatus.style.color = "var(--fail)";
-        urlAutoStatus.innerText = "Scrape failed: " + err.message;
-    } finally {
-        urlAutoBtn.disabled = false;
-        setTimeout(() => urlAutoStatus.innerText = "", 7000);
+        runUnifiedAutoBtn.disabled = false;
     }
 });
