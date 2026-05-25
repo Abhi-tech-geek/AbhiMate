@@ -1,0 +1,231 @@
+<!-- Toast notifications stack -->
+<div id="toastStack" class="toast-stack" role="region" aria-label="Notifications" aria-live="polite"></div>
+
+<!-- Command palette (⌘K / Ctrl+K) -->
+<div id="cmdPalette" class="cmd-backdrop hidden" aria-hidden="true">
+    <div class="cmd-card" role="dialog" aria-modal="true" aria-labelledby="cmdInputLabel">
+        <label id="cmdInputLabel" class="sr-only" for="cmdInput">Command palette</label>
+        <input id="cmdInput" class="cmd-input" type="text" autocomplete="off"
+               placeholder="Type a command, search sessions, jump to a tab…" aria-controls="cmdResults">
+        <ul id="cmdResults" class="cmd-results" role="listbox" aria-label="Command results"></ul>
+        <div class="cmd-footer">
+            <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+            <span><kbd>↵</kbd> select</span>
+            <span><kbd>Esc</kbd> close</span>
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox modal for failure screenshots -->
+<div id="lightbox" class="lightbox hidden" aria-hidden="true">
+    <button class="lightbox-close" aria-label="Close">&times;</button>
+    <img id="lightboxImg" alt="Failure screenshot">
+</div>
+
+<!-- Suggest Fix modal (Phase 3 triage) -->
+<div id="fixModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="fixModalTitle">Suggest a fix</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="fixModalLoading" class="modal-loading">
+                <span class="spinner"></span> Asking AI for a corrected snippet…
+            </div>
+            <div id="fixModalContent" class="hidden">
+                <p class="modal-label">Why it likely failed</p>
+                <p id="fixExplanation" class="modal-explanation"></p>
+                <p class="modal-label">Suggested replacement code</p>
+                <textarea id="fixCodeArea" class="code-edit-area" rows="12" spellcheck="false"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary-btn" id="fixCancelBtn" type="button">Cancel</button>
+            <button class="btn primary-btn" id="fixApplyBtn" type="button" disabled>Apply &amp; Retry</button>
+        </div>
+    </div>
+</div>
+
+<!-- Screenshot → tests modal (Feature #6) -->
+<div id="screenshotModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Generate tests from a screenshot</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-explanation">
+                Drop or paste a screenshot of any UI. The vision model
+                inventories the visible elements and builds BDD test cases
+                grounded in what it actually sees — no DOM required.
+            </p>
+
+            <div id="screenshotDropZone" class="screenshot-dropzone" tabindex="0"
+                 aria-label="Drop a screenshot or click to pick a file">
+                <input id="screenshotFileInput" type="file"
+                       accept="image/png,image/jpeg,image/webp" class="sr-only">
+                <div id="screenshotPlaceholder" class="screenshot-placeholder">
+                    <div class="screenshot-icon">📸</div>
+                    <div><strong>Drop, paste, or click</strong> to add a screenshot</div>
+                    <div class="screenshot-hint">PNG, JPEG or WebP — up to 6 MB</div>
+                </div>
+                <img id="screenshotPreview" alt="Selected screenshot" class="screenshot-preview hidden">
+            </div>
+
+            <p class="modal-label">Optional hint <span class="auth-optional">(what should the AI focus on?)</span></p>
+            <input id="screenshotHint" class="env-dropdown" type="text"
+                   placeholder="e.g. 'This is the checkout page — focus on payment validation'">
+
+            <p class="modal-label">Case count</p>
+            <select id="screenshotCount" class="env-dropdown">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="8">8</option>
+                <option value="12">12</option>
+                <option value="20">20</option>
+            </select>
+
+            <p id="screenshotStatus" class="ticket-status" aria-live="polite"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary-btn" id="screenshotCancelBtn" type="button">Cancel</button>
+            <button class="btn primary-btn" id="screenshotSubmitBtn" type="button" disabled>
+                Generate tests
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Create-ticket modal (Feature #11) -->
+<div id="ticketModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="ticketModalTitle">Create a ticket</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="ticketModalConfigMissing" class="hidden">
+                <p class="modal-explanation">
+                    No bug-tracker is configured yet. Open
+                    <a href="#" id="ticketGoToSettings">Settings → Bug tracker integrations</a>
+                    to connect JIRA or Linear, then come back here.
+                </p>
+            </div>
+
+            <div id="ticketModalForm">
+                <p class="modal-label">Provider</p>
+                <div class="ticket-provider-picker" role="radiogroup" aria-label="Provider">
+                    <label class="ticket-provider-choice">
+                        <input type="radio" name="ticketProvider" value="jira" id="ticketProviderJira">
+                        <span>JIRA</span>
+                    </label>
+                    <label class="ticket-provider-choice">
+                        <input type="radio" name="ticketProvider" value="linear" id="ticketProviderLinear">
+                        <span>Linear</span>
+                    </label>
+                </div>
+
+                <p class="modal-label">Project / team override <span class="auth-optional">(optional)</span></p>
+                <input id="ticketProjectOverride" class="env-dropdown" type="text"
+                       placeholder="Leave blank to use the default from Settings">
+
+                <p class="modal-label">Title override <span class="auth-optional">(optional)</span></p>
+                <input id="ticketTitleOverride" class="env-dropdown" type="text"
+                       placeholder="Leave blank for AbhiMate's default title">
+
+                <label class="ticket-deep-dive-toggle">
+                    <input id="ticketIncludeDeepDive" type="checkbox" checked>
+                    Include AI deep-dive in the ticket body (slower)
+                </label>
+
+                <p id="ticketStatus" class="ticket-status" aria-live="polite"></p>
+                <div id="ticketResult" class="hidden">
+                    <p class="modal-label">Ticket created</p>
+                    <p><a id="ticketResultLink" href="#" target="_blank" rel="noopener"></a></p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary-btn" id="ticketCancelBtn" type="button">Close</button>
+            <button class="btn primary-btn" id="ticketSubmitBtn" type="button">Create ticket</button>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule session modal (Feature #7) -->
+<div id="scheduleModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="scheduleModalTitle">Schedule recurring run</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-explanation" id="scheduleModalSubtitle">
+                Pick how often this session should re-run. Results post to
+                Slack if you've configured a webhook in Settings.
+            </p>
+            <p class="modal-label">Schedule expression</p>
+            <input id="scheduleExprInput" class="env-dropdown" type="text"
+                   placeholder="every 6h" autocomplete="off">
+            <div class="schedule-expr-presets" role="group" aria-label="Common schedules">
+                <button type="button" class="chip" data-preset="every 30m">every 30m</button>
+                <button type="button" class="chip" data-preset="every 1h">every 1h</button>
+                <button type="button" class="chip" data-preset="every 6h">every 6h</button>
+                <button type="button" class="chip" data-preset="every 1d">every 1d</button>
+                <button type="button" class="chip" data-preset="daily 09:00">daily 09:00</button>
+            </div>
+            <label class="ticket-deep-dive-toggle">
+                <input id="scheduleSlackToggle" type="checkbox" checked>
+                Post results to Slack after each run
+            </label>
+            <p id="scheduleModalStatus" class="ticket-status" aria-live="polite"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary-btn" id="scheduleCancelBtn" type="button">Cancel</button>
+            <button class="btn primary-btn" id="scheduleSaveBtn" type="button">Save schedule</button>
+        </div>
+    </div>
+</div>
+
+<!-- Deep-dive modal (Feature #12) -->
+<div id="deepDiveModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card modal-card--wide">
+        <div class="modal-header">
+            <h3 id="deepDiveTitle">Why did this fail?</h3>
+            <span id="deepDiveConfidence" class="dd-confidence"></span>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="deepDiveLoading" class="modal-loading">
+                <span class="spinner"></span> Gathering trace + history, asking AI…
+            </div>
+            <div id="deepDiveContent" class="hidden">
+                <p class="modal-label">Summary</p>
+                <p id="ddSummary" class="modal-explanation"></p>
+
+                <p class="modal-label">Root cause</p>
+                <p id="ddRoot" class="modal-explanation"></p>
+
+                <p class="modal-label">Why it failed now</p>
+                <p id="ddWhy" class="modal-explanation"></p>
+
+                <p class="modal-label">Pattern</p>
+                <p id="ddPattern" class="modal-explanation"></p>
+
+                <p class="modal-label">Suggested fix</p>
+                <p id="ddFix" class="modal-explanation"></p>
+
+                <details id="ddPatchWrap" class="dd-patch-wrap hidden">
+                    <summary>Suggested Action-Plan patch</summary>
+                    <pre id="ddPatch" class="dd-patch"></pre>
+                </details>
+
+                <p id="ddContextMeta" class="dd-context-meta"></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary-btn" id="ddCloseBtn" type="button">Close</button>
+        </div>
+    </div>
+</div>

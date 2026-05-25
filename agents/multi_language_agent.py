@@ -1,14 +1,29 @@
 import os
 from groq import Groq
 
+
 class MultiLanguageAgent:
     def __init__(self):
         self.api_key = os.environ.get("GROQ_API_KEY")
         self.client = Groq(api_key=self.api_key)
 
+    @staticmethod
+    def _is_plain_english(text: str) -> bool:
+        """Heuristic fast-path: ASCII-only input is already English-compatible."""
+        try:
+            text.encode("ascii")
+            return True
+        except UnicodeEncodeError:
+            return False
+
     def adapt_prompt_for_locale(self, raw_input: str, target_locale: str = "en-US") -> str:
-        """Translates inputs into standard English before testing, while preserving intended locale for the output."""
+        """Translate non-English / Hinglish input to English. Skips when input is
+        already ASCII and target locale is English — saves a full LLM round-trip.
+        """
         if not self.api_key:
+            return raw_input
+
+        if target_locale.lower().startswith("en") and self._is_plain_english(raw_input):
             return raw_input
             
         prompt = f"""You are the MultiLanguage testing agent.
@@ -24,7 +39,7 @@ class MultiLanguageAgent:
         try:
             chat_completion = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama3-8b-8192", 
+                model="llama-3.1-8b-instant",
                 temperature=0.1
             )
             return chat_completion.choices[0].message.content.strip()

@@ -24,7 +24,7 @@ class FormUnderstandingAgent:
 
             chat_completion = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",
                 temperature=0.1
             )
             

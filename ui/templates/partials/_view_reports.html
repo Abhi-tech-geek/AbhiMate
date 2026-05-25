@@ -1,0 +1,34 @@
+<div id="reportsView" class="view-panel" role="tabpanel" aria-label="Reports" hidden>
+    <h1>Report &amp; Analysis Matrix</h1>
+    <div class="reports-toolbar">
+        <p class="subtitle reports-help">Select a targeted session to view granular analytical logs.</p>
+        <label for="reportSessionSelect" class="sr-only">Select session</label>
+        <select id="reportSessionSelect" class="env-dropdown report-select">
+            <option value="">-- Load an Executed Session --</option>
+        </select>
+    </div>
+
+    <div id="reportContentArea" class="hidden">
+        <div class="report-grid">
+            <div class="test-case-card report-health-card">
+                <h3 class="report-health-title">Health Status</h3>
+                <div class="health-chart-wrap">
+                    <canvas id="healthChart"></canvas>
+                </div>
+            </div>
+            <div class="test-case-card report-summary-card">
+                <h3>🤖 QA Director Executive Summary</h3>
+                <p id="rSummary" class="report-summary"></p>
+            </div>
+        </div>
+
+        <div class="test-case-card report-logs-card">
+            <h3 class="logs-title">Developer Failure Logs &amp; Root Cause Analysis</h3>
+            <ul id="rLogsList" class="logs-list"></ul>
+        </div>
+    </div>
+
+    <div id="reportEmptyState" class="report-empty">
+        No session selected. Please pick a session run from the dropdown above.
+    </div>
+</div>

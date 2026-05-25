@@ -1,0 +1,89 @@
+<div id="dashboardView" class="view-panel active-view" role="tabpanel" aria-labelledby="tab-dashboardView">
+
+    <div id="welcomeState" class="welcome-state">
+        <h1>Manual AI Test Generator</h1>
+        <p class="subtitle">Enter a feature description or product URL. AI will build your BDD test suite in seconds.</p>
+        <div class="example-chips" id="exampleChips">
+            <span class="chip-label">Try:</span>
+            <button class="chip" data-prompt="Reset password via email link with 15-minute token expiry">Password reset</button>
+            <button class="chip" data-prompt="Add product to cart and complete checkout with saved card">Checkout flow</button>
+            <button class="chip" data-prompt="https://www.saucedemo.com">Scrape saucedemo.com</button>
+            <button class="chip" data-prompt="OTP-based phone-number login with 60s resend cooldown">OTP login</button>
+            <button class="chip" data-prompt="Search bar with filters, sorting and pagination">Search + filter</button>
+            <button id="screenshotChip" class="chip chip-magic" type="button"
+                    title="Upload a UI screenshot — vision AI proposes test cases">
+                📸 From screenshot
+            </button>
+            <button id="recordingChip" class="chip chip-magic" type="button"
+                    title="Import a JSON recorded by the AbhiMate Chrome extension">
+                📥 Import recording
+            </button>
+            <input id="recordingFileInput" type="file" accept="application/json,.json"
+                   class="sr-only" aria-hidden="true">
+        </div>
+    </div>
+
+    <div id="activeSessionState" class="hidden">
+        <h2 id="activeSessionTitle" class="session-title">...</h2>
+        <div class="status-badge" id="activeSessionStatus">PIPELINE RUNNING</div>
+
+        <div class="test-cases-list" id="testCasesContainer">
+            <!-- Test Cases injected here -->
+        </div>
+
+        <div id="automationPrompt" class="hidden run-controls">
+            <div class="run-actions">
+                <button id="selectAllBtn" class="btn secondary-btn" type="button">Select all</button>
+                <button id="selectNoneBtn" class="btn secondary-btn" type="button">Clear</button>
+                <button id="runAutomationBtn" class="btn primary-btn" type="button">Run Selected</button>
+                <button id="cancelRunBtn" class="btn danger-btn hidden" type="button">Cancel run</button>
+            </div>
+            <div id="runProgress" class="run-progress hidden">
+                <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-label" id="progressLabel" role="status" aria-live="polite">Starting…</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-box">
+            <label for="featureInput" class="sr-only">Feature description or URL</label>
+            <textarea id="featureInput" placeholder="Describe feature (English/Hinglish) OR paste URL (e.g. https://amazon.in)" aria-label="Feature description"></textarea>
+            <button id="generateBtn" class="send-btn" type="button" aria-label="Generate test cases">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+        <div class="input-options">
+            <label>
+                <input type="checkbox" id="autoExecuteCheck">
+                Generate + Run Automatic Execution Pipeline
+            </label>
+            <label class="count-picker">
+                Cases:
+                <select id="caseCountSelect" class="env-dropdown count-select">
+                    <option value="5">5</option>
+                    <option value="8" selected>8</option>
+                    <option value="12">12</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                </select>
+            </label>
+            <label class="count-picker"
+                   title="Run cases concurrently across multiple Chrome instances. Workers > 1 force headless mode.">
+                Workers:
+                <select id="workersSelect" class="env-dropdown count-select">
+                    <option value="1" selected>1 (sequential)</option>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="8">8</option>
+                </select>
+            </label>
+        </div>
+    </div>
+</div>

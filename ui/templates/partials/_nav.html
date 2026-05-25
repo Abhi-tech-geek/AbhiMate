@@ -1,0 +1,63 @@
+<header class="top-nav" role="banner">
+    <div class="nav-brand">
+        <button id="sidebarToggle" class="nav-toggle" type="button"
+                aria-label="Toggle sidebar" aria-expanded="true" aria-controls="mainSidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" class="logo brand-logo" aria-hidden="true">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <h2>AbhiMate QA</h2>
+    </div>
+    <div class="nav-tabs" role="tablist" aria-label="Primary views">
+        <button class="nav-tab active" data-target="dashboardView" type="button"
+                role="tab" aria-selected="true" aria-controls="dashboardView" id="tab-dashboardView">Tests</button>
+        <button class="nav-tab" data-target="automatedView" type="button"
+                role="tab" aria-selected="false" aria-controls="automatedView" id="tab-automatedView" tabindex="-1">Runs</button>
+        <button class="nav-tab" data-target="globalStatsView" type="button"
+                role="tab" aria-selected="false" aria-controls="globalStatsView" id="tab-globalStatsView" tabindex="-1">Insights</button>
+        <button class="nav-tab" data-target="settingsView" type="button"
+                role="tab" aria-selected="false" aria-controls="settingsView" id="tab-settingsView" tabindex="-1">Settings</button>
+    </div>
+    <div class="nav-actions">
+        <span id="navModelBadge" class="nav-badge" aria-live="polite" title="Active model">70B</span>
+        <button id="themeToggle" class="icon-btn" type="button"
+                aria-label="Switch to light theme" title="Toggle theme">
+            <svg class="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg class="theme-icon-light hidden" width="20" height="20" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        </button>
+        <div class="user-chip" id="userChip" aria-haspopup="menu">
+            <button id="userChipBtn" class="user-chip-btn" type="button" aria-label="Account menu">
+                <span class="user-avatar" id="userAvatar">·</span>
+                <span class="user-chip-name" id="userChipName">Signed in</span>
+            </button>
+            <div id="userMenu" class="user-menu hidden" role="menu" aria-label="Account">
+                <div class="user-menu-header">
+                    <div class="user-menu-name" id="userMenuName">—</div>
+                    <div class="user-menu-email" id="userMenuEmail">—</div>
+                </div>
+                <button id="logoutBtn" class="user-menu-item" type="button" role="menuitem">Log out</button>
+            </div>
+        </div>
+    </div>
+</header>

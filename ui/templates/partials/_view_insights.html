@@ -1,0 +1,60 @@
+<div id="globalStatsView" class="view-panel" role="tabpanel" aria-labelledby="tab-globalStatsView" hidden>
+    <div class="view-header">
+        <h1>System Health &amp; Execution Insights</h1>
+        <p class="subtitle">Cumulative tracking across all test pipelines and AI agents.</p>
+    </div>
+
+    <div class="dashboard-metrics" id="globalMetricsPanel">
+        <div class="stat-box">
+            <h4>Total Tests</h4>
+            <div class="stat-val" id="mTotal">0</div>
+        </div>
+        <div class="stat-box">
+            <h4>Pass Rate</h4>
+            <div class="stat-val stat-val--pass" id="mPassRate">0%</div>
+        </div>
+        <div class="stat-box">
+            <h4>AI Insights Detected</h4>
+            <div class="stat-val" id="mBugs">0</div>
+        </div>
+    </div>
+
+    <div class="test-case-card global-hub-card">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" class="global-hub-icon" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <h2>Welcome to the Global Hub</h2>
+        <p class="hub-help">Macro-level insights across every session. Below: compare two runs side by side or eyeball the most-recurring failures.</p>
+    </div>
+
+    <section class="test-case-card insights-panel" aria-labelledby="diff-panel-title">
+        <h3 id="diff-panel-title" class="insights-panel-title">Compare runs</h3>
+        <div class="diff-pickers">
+            <div>
+                <label for="diffA" class="form-label">Run A (baseline)</label>
+                <select id="diffA" class="env-dropdown"><option value="">— select —</option></select>
+            </div>
+            <div>
+                <label for="diffB" class="form-label">Run B (compare)</label>
+                <select id="diffB" class="env-dropdown"><option value="">— select —</option></select>
+            </div>
+            <button id="diffRunBtn" class="btn primary-btn" type="button">Diff</button>
+        </div>
+        <div id="diffResult" class="hidden">
+            <table class="diff-table">
+                <thead>
+                    <tr><th>Case</th><th>Description</th><th>A</th><th>B</th><th>Δ</th></tr>
+                </thead>
+                <tbody id="diffTbody"></tbody>
+            </table>
+        </div>
+        <div id="diffEmpty" class="diff-empty">Pick two executed sessions to see what changed.</div>
+    </section>
+
+    <section class="test-case-card insights-panel" aria-labelledby="patterns-panel-title">
+        <h3 id="patterns-panel-title" class="insights-panel-title">Recurring failures</h3>
+        <ul id="patternList" class="pattern-list"></ul>
+        <div id="patternEmpty" class="diff-empty">No failures observed yet.</div>
+    </section>
+</div>

@@ -1,0 +1,51 @@
+<aside class="sidebar" id="mainSidebar">
+    <div class="sidebar-content-wrapper sidebar-content-wrapper--tight">
+        <button id="newSessionBtn" class="btn primary-btn" type="button">+ New Session</button>
+        <div class="quota-row" aria-live="polite">
+            <span class="quota-label">Sessions</span>
+            <span class="quota-value" id="quotaValue">— / 5</span>
+            <div class="quota-bar" aria-hidden="true">
+                <span class="quota-fill" id="quotaFill"></span>
+            </div>
+        </div>
+
+        <button id="navToReportsBtn" class="btn btn-outline-accent" type="button">📊 View Analysis &amp; Reports</button>
+
+        <div class="sidebar-list-container sidebar-list-container--flush">
+            <div class="sidebar-tools">
+                <label for="sessionSearch" class="sr-only">Search sessions</label>
+                <input id="sessionSearch" class="sidebar-search" type="search"
+                       placeholder="Search sessions…" aria-label="Search sessions">
+                <div class="sidebar-filters" role="group" aria-label="Filter sessions by state">
+                    <button class="filter-chip active" data-filter="all" type="button" aria-pressed="true">All</button>
+                    <button class="filter-chip" data-filter="pinned" type="button" aria-pressed="false">Pinned</button>
+                    <button class="filter-chip" data-filter="generated" type="button" aria-pressed="false">Draft</button>
+                    <button class="filter-chip" data-filter="executed" type="button" aria-pressed="false">Run</button>
+                </div>
+            </div>
+            <h4 class="sidebar-title">Session History</h4>
+            <ul id="sessionList" class="session-list" aria-label="Session list"></ul>
+            <p id="sessionEmpty" class="sidebar-empty hidden">No sessions match.</p>
+        </div>
+
+        <footer class="sidebar-footer">
+            <div class="sidebar-user">
+                <span class="user-avatar sidebar-avatar" id="sidebarAvatar">·</span>
+                <div class="sidebar-user-meta">
+                    <div class="sidebar-user-name" id="sidebarUserName">Signed in</div>
+                    <div class="sidebar-user-email" id="sidebarUserEmail">—</div>
+                </div>
+            </div>
+            <button id="sidebarLogoutBtn" class="btn sidebar-logout-btn" type="button"
+                    aria-label="Log out of AbhiMate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Log out</span>
+            </button>
+        </footer>
+    </div>
+</aside>

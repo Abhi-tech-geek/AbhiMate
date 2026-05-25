@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AbhiMate Recorder</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header class="head">
+    <div class="brand">
+        <span class="dot"></span>
+        <strong>AbhiMate</strong>
+        <span class="muted">Recorder</span>
+    </div>
+    <span id="status" class="status muted">idle</span>
+</header>
+
+<main class="body">
+    <label for="featureInput" class="lbl">Feature name (optional)</label>
+    <input id="featureInput" type="text" autocomplete="off"
+           placeholder="Login flow, checkout, …">
+
+    <div class="row">
+        <button id="recordBtn" class="primary">● Start recording</button>
+        <button id="clearBtn" class="ghost" title="Discard the in-progress recording">Clear</button>
+    </div>
+
+    <p id="hint" class="muted small">
+        Hit <b>Start recording</b>, switch to the page you want to capture, and do the flow.
+        We'll record clicks, typing, and navigation. Open the popup again and hit
+        <b>Stop</b> to download a JSON file you can import into AbhiMate.
+    </p>
+
+    <ul id="actionList" class="actions" aria-live="polite"></ul>
+
+    <div class="row" id="exportRow" hidden>
+        <button id="downloadBtn" class="primary">⤓ Download recording</button>
+        <button id="copyBtn" class="ghost">Copy to clipboard</button>
+    </div>
+</main>
+
+<footer class="foot muted small">
+    v1.0 — open AbhiMate → drop the JSON onto the chat input.
+</footer>
+
+<script src="popup.js" type="module"></script>
+</body>
+</html>

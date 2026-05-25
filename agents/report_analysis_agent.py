@@ -85,6 +85,6 @@ Output valid JSON:
             }
         except Exception as e:
             return {
-                "bug_patterns": [f"LLM Error: {{str(e)}}"],
+                "bug_patterns": [f"LLM Error: {str(e)}"],
                 "ai_suggestions": "System encountered an error parsing global insights."
             }

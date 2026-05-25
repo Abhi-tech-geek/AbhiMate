@@ -1,11 +1,13 @@
 class ModelSelectorAgent:
+    """Maps a UI preference token to a concrete Groq model ID."""
+
+    DEFAULT = "accurate"
+
     def __init__(self):
-        # We define Groq models mapped by capabilities
         self.models = {
-            "fast": "llama3-8b-8192",         # Fast reasoning
-            "accurate": "llama3-70b-8192"     # Deep reasoning
+            "fast": "llama-3.1-8b-instant",
+            "accurate": "llama-3.3-70b-versatile",
         }
 
-    def get_model(self, preference: str = "accurate") -> str:
-        """Returns the appropriate Groq model ID based on proxy preference."""
-        return self.models.get(preference, self.models["accurate"])
+    def get_model(self, preference: str = DEFAULT) -> str:
+        return self.models.get(preference, self.models[self.DEFAULT])

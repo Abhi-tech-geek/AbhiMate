@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "AbhiMate Recorder",
+    "version": "1.0.0",
+    "description": "Record clicks, inputs, and navigation on any web page, then import the recording into AbhiMate as a runnable BDD session.",
+    "permissions": [
+        "scripting",
+        "tabs",
+        "storage",
+        "activeTab",
+        "webNavigation"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "AbhiMate Recorder"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    }
+}

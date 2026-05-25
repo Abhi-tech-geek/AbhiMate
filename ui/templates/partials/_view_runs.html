@@ -1,0 +1,31 @@
+<div id="automatedView" class="view-panel" role="tabpanel" aria-labelledby="tab-automatedView" hidden>
+    <div class="automation-hero">
+        <h1 class="gradient-heading">Automation Pipeline Hub</h1>
+        <p class="subtitle">Direct API execution interface. Manual test executions or Data-Driven injections happen here.</p>
+
+        <div class="test-case-card runner-card">
+            <h3 class="runner-title">Unified Execution Runner</h3>
+            <p class="runner-help">Enter your test instructions as plain text <b class="accent-text">OR</b> upload a CSV file.</p>
+
+            <div class="form-row">
+                <label for="unifiedTextInput" class="form-label">1. Text-Based Manual Tests / Instructions</label>
+                <textarea id="unifiedTextInput" class="csv-textarea" placeholder="Enter your manual test scripts or natural language instructions here..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <label for="unifiedFileInput" class="form-label">2. File Upload (Optional CSV dataset)</label>
+                <input type="file" id="unifiedFileInput" accept=".csv" class="csv-file">
+            </div>
+
+            <button id="runUnifiedAutoBtn" class="primary-btn auto-run-btn" type="button">
+                <span class="btn-inner">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Inject &amp; Execute Automation
+                </span>
+            </button>
+            <p id="unifiedAutoStatus" class="auto-status" role="status" aria-live="polite"></p>
+        </div>
+
+        <div id="automationResultsContainer" class="hidden auto-results"></div>
+    </div>
+</div>

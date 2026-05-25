@@ -1,0 +1,207 @@
+<div id="settingsView" class="view-panel" role="tabpanel" aria-labelledby="tab-settingsView" hidden>
+    <div class="view-header">
+        <h1>Settings</h1>
+        <p class="subtitle">Generation and execution preferences. Stored in your browser.</p>
+    </div>
+
+    <div class="settings-grid">
+        <section class="test-case-card settings-section" aria-labelledby="settings-gen-title">
+            <h3 id="settings-gen-title" class="settings-section-title">Generation</h3>
+            <div class="settings-row">
+                <label for="modelSelect">Model</label>
+                <select id="modelSelect" class="env-dropdown">
+                    <option value="accurate">Accurate (Llama 3.3 70B)</option>
+                    <option value="fast">Fast (Llama 3.1 8B)</option>
+                </select>
+            </div>
+            <div class="settings-row">
+                <label for="langSelect">Input language</label>
+                <select id="langSelect" class="env-dropdown">
+                    <option value="en-US">English (US)</option>
+                    <option value="fr-FR">French</option>
+                    <option value="es-ES">Spanish</option>
+                </select>
+            </div>
+            <div class="settings-row">
+                <label for="defaultCountInput">Default cases per generation</label>
+                <input id="defaultCountInput" class="env-dropdown" type="number" min="1" max="50" value="8">
+            </div>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-exec-title">
+            <h3 id="settings-exec-title" class="settings-section-title">Execution</h3>
+            <div class="settings-row">
+                <label for="envSelect">Environment</label>
+                <select id="envSelect" class="env-dropdown">
+                    <option value="web">Web (Selenium)</option>
+                    <option value="android" disabled>Android (coming soon)</option>
+                </select>
+            </div>
+            <div class="settings-row settings-row--toggle">
+                <label for="headlessToggle">Headless browser</label>
+                <input id="headlessToggle" class="settings-toggle" type="checkbox">
+                <span class="settings-hint">Faster CI runs. Disable to watch Selenium drive the page.</span>
+            </div>
+            <div class="settings-row">
+                <label for="deviceSelect">Device emulation</label>
+                <select id="deviceSelect" class="env-dropdown">
+                    <option value="Desktop">Desktop (1440 × 900)</option>
+                    <option value="iPhone 13">iPhone 13 (390 × 844)</option>
+                    <option value="iPhone 15 Pro Max">iPhone 15 Pro Max (430 × 932)</option>
+                    <option value="iPhone SE">iPhone SE (375 × 667)</option>
+                    <option value="Pixel 5">Pixel 5 (393 × 851)</option>
+                    <option value="Pixel 7">Pixel 7 (412 × 915)</option>
+                    <option value="Galaxy S22">Galaxy S22 (360 × 780)</option>
+                    <option value="iPad Pro 11">iPad Pro 11 (834 × 1194)</option>
+                    <option value="iPad mini">iPad mini (768 × 1024)</option>
+                </select>
+                <span class="settings-hint">Drives viewport + user agent + touch hints for every new run.</span>
+            </div>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-appearance-title">
+            <h3 id="settings-appearance-title" class="settings-section-title">Appearance</h3>
+            <div class="settings-row settings-row--toggle">
+                <label for="themeToggleSettings">Light theme</label>
+                <input id="themeToggleSettings" class="settings-toggle" type="checkbox">
+                <span class="settings-hint">Mirrors the moon/sun button in the top bar.</span>
+            </div>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-tickets-title">
+            <h3 id="settings-tickets-title" class="settings-section-title">Bug tracker integrations</h3>
+            <p class="settings-hint">
+                Configure a JIRA Cloud or Linear workspace so AbhiMate can file a ticket
+                for any failed test case in one click. Tokens are stored per-user in your
+                local SQLite database — for personal/local use.
+            </p>
+
+            <div class="ticket-provider-block">
+                <h4 class="ticket-provider-title">JIRA Cloud</h4>
+                <div class="settings-row">
+                    <label for="jiraBaseUrl">Site URL</label>
+                    <input id="jiraBaseUrl" class="env-dropdown" type="url"
+                           placeholder="https://yourdomain.atlassian.net">
+                </div>
+                <div class="settings-row">
+                    <label for="jiraEmail">Atlassian email</label>
+                    <input id="jiraEmail" class="env-dropdown" type="email"
+                           placeholder="you@company.com">
+                </div>
+                <div class="settings-row">
+                    <label for="jiraToken">API token</label>
+                    <input id="jiraToken" class="env-dropdown" type="password"
+                           placeholder="From id.atlassian.com → API tokens">
+                </div>
+                <div class="settings-row">
+                    <label for="jiraProject">Default project key</label>
+                    <input id="jiraProject" class="env-dropdown" type="text"
+                           placeholder="e.g. QA">
+                </div>
+                <div class="ticket-provider-actions">
+                    <span id="jiraStatus" class="ticket-provider-status" aria-live="polite"></span>
+                    <button id="jiraSaveBtn" class="btn primary-btn" type="button">Save</button>
+                    <button id="jiraDeleteBtn" class="btn secondary-btn" type="button">Remove</button>
+                </div>
+            </div>
+
+            <div class="ticket-provider-block">
+                <h4 class="ticket-provider-title">Linear</h4>
+                <div class="settings-row">
+                    <label for="linearToken">API token</label>
+                    <input id="linearToken" class="env-dropdown" type="password"
+                           placeholder="From linear.app/settings/api">
+                </div>
+                <div class="settings-row">
+                    <label for="linearTeam">Default team ID</label>
+                    <input id="linearTeam" class="env-dropdown" type="text"
+                           placeholder="Team UUID — find via GET /teams in the API">
+                </div>
+                <div class="ticket-provider-actions">
+                    <span id="linearStatus" class="ticket-provider-status" aria-live="polite"></span>
+                    <button id="linearSaveBtn" class="btn primary-btn" type="button">Save</button>
+                    <button id="linearDeleteBtn" class="btn secondary-btn" type="button">Remove</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-slack-title">
+            <h3 id="settings-slack-title" class="settings-section-title">Slack notifications</h3>
+            <p class="settings-hint">
+                Paste an incoming-webhook URL from
+                <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener">Slack</a>.
+                AbhiMate posts a Block Kit summary to that channel after every scheduled run
+                (pass/fail counts, failing case names, a link back to the session).
+            </p>
+            <div class="settings-row">
+                <label for="slackWebhookUrl">Webhook URL</label>
+                <input id="slackWebhookUrl" class="env-dropdown" type="url"
+                       placeholder="https://hooks.slack.com/services/T…/B…/…">
+            </div>
+            <div class="settings-row">
+                <label for="slackChannel">Channel hint</label>
+                <input id="slackChannel" class="env-dropdown" type="text"
+                       placeholder="#qa-alerts (purely informational, the webhook decides)">
+            </div>
+            <div class="settings-row">
+                <label for="slackMention">Mention on failure</label>
+                <input id="slackMention" class="env-dropdown" type="text"
+                       placeholder="@here or <@U123ABC>">
+            </div>
+            <div class="ticket-provider-actions">
+                <span id="slackStatus" class="ticket-provider-status" aria-live="polite"></span>
+                <button id="slackSaveBtn" class="btn primary-btn" type="button">Save</button>
+                <button id="slackTestBtn" class="btn secondary-btn" type="button">Send test</button>
+                <button id="slackDeleteBtn" class="btn secondary-btn" type="button">Remove</button>
+            </div>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-schedules-title">
+            <h3 id="settings-schedules-title" class="settings-section-title">Scheduled runs</h3>
+            <p class="settings-hint">
+                A background scheduler re-runs your saved sessions on a cadence
+                (e.g. <code>every 6h</code>, <code>daily 09:00</code>) and posts the
+                result to Slack. Manage existing schedules below, or click
+                <em>Schedule</em> on any session in the sidebar to add one.
+            </p>
+            <div id="schedulesList" class="schedules-list" aria-live="polite">
+                <p class="settings-about">Loading…</p>
+            </div>
+            <button id="refreshSchedulesBtn" class="btn secondary-btn" type="button">
+                Refresh
+            </button>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-account-title">
+            <h3 id="settings-account-title" class="settings-section-title">Account</h3>
+            <div class="settings-row">
+                <span class="settings-account-label">Signed in as</span>
+                <span id="settingsAccountEmail" class="settings-account-email">—</span>
+            </div>
+            <button id="settingsLogoutBtn" class="btn danger-btn settings-logout" type="button">
+                Log out
+            </button>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-visual-title">
+            <h3 id="settings-visual-title" class="settings-section-title">Visual baselines</h3>
+            <p class="settings-about">
+                Screenshots captured by <code>visual_baseline</code> ops. The
+                next run compares against these — promote when a UI change is
+                intentional, delete to reseed on the following run.
+            </p>
+            <div id="visualBaselinesList" class="visual-baselines-grid" aria-live="polite">
+                <p class="settings-about">Loading…</p>
+            </div>
+            <button id="refreshVisualBaselinesBtn" class="btn secondary-btn" type="button">
+                Refresh
+            </button>
+        </section>
+
+        <section class="test-case-card settings-section" aria-labelledby="settings-info-title">
+            <h3 id="settings-info-title" class="settings-section-title">About</h3>
+            <p class="settings-about">AbhiMate v2 — Multi-agent QA platform. Phase 0 + 1 + 2 + 3 + A + B + 4 + 5 + C + D active.</p>
+            <p class="settings-about">Engine: <span class="accent-text">action_plan</span> (Selenium backend, Playwright-ready).</p>
+        </section>
+    </div>
+</div>
