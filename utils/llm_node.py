@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Optional
 from groq import Groq, AuthenticationError, APIConnectionError, APIError, RateLimitError
 from dotenv import load_dotenv
 
