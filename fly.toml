@@ -1,0 +1,35 @@
+# Fly.io config — best performance of the three free options.
+# Deploy: install flyctl, then `fly launch --no-deploy` (reads this) →
+#   fly secrets set GROQ_API_KEY=gsk_xxxxx
+#   fly deploy
+#
+# Change `app` to a globally-unique name before first launch.
+
+app = "abhimate"
+primary_region = "bom"          # Mumbai — closest to India
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ABHIMATE_HEADLESS = "true"
+  ABHIMATE_HOST = "0.0.0.0"
+  ABHIMATE_DEBUG = "false"
+  ABHIMATE_BACKEND = "selenium"
+  ABHIMATE_PUBLIC_URL = "https://abhimate.theabhinavsaxena.in"
+
+[http_service]
+  internal_port = 5000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0       # set to 1 if you want schedules to always fire
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"                 # Chromium needs the headroom
+
+# Persist SQLite DB + screenshots/traces across deploys.
+[mounts]
+  source = "abhimate_data"
+  destination = "/app/data"

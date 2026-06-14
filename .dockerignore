@@ -1,0 +1,42 @@
+# Keep the build context (and image) lean + secret-free.
+
+# Secrets — NEVER bake into the image
+.env
+data/.session_secret
+
+# Personal notes (gitignored anyway)
+notes/
+
+# Python cruft
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.pytest_cache/
+
+# Runtime data — recreated empty in the container
+data/screenshots/
+data/traces/
+data/junit/
+data/auth_states/
+data/baselines/
+data/sessions/
+database/*.db
+database/*.db-wal
+database/*.db-shm
+
+# WebDriver cache (container uses system driver)
+.wdm/
+
+# Git + CI + editor
+.git/
+.github/
+.vscode/
+.idea/
+
+# Docs that don't belong in the runtime image
+docs/
+tests/
+*.md
+!chrome_extension/README.md

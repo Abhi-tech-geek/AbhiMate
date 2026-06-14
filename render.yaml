@@ -1,0 +1,27 @@
+# Render.com blueprint — alternative to Railway.
+# In Render: New + → Blueprint → point at this repo. Render reads this file.
+
+services:
+  - type: web
+    name: abhimate
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free            # free tier sleeps after 15 min idle; upgrade for always-on
+    healthCheckPath: /login
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false        # set the real value in the Render dashboard (secret)
+      - key: ABHIMATE_HEADLESS
+        value: "true"
+      - key: ABHIMATE_HOST
+        value: "0.0.0.0"
+      - key: ABHIMATE_DEBUG
+        value: "false"
+      - key: ABHIMATE_BACKEND
+        value: "selenium"
+      - key: ABHIMATE_PUBLIC_URL
+        value: "https://abhimate.theabhinavsaxena.in"
+    disk:
+      name: abhimate-data
+      mountPath: /app/data
+      sizeGB: 1

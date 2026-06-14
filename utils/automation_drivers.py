@@ -34,20 +34,41 @@ class WebSeleniumDriver(BaseDriver):
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        # Container Chrome (111+) blocks DevTools websocket from non-localhost
+        # origins by default — allow it so headless launch doesn't hang.
+        options.add_argument("--remote-allow-origins=*")
+        options.add_argument("--window-size=1920,1080")
         # Capture browser console logs so the trace JSON can include them.
         options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
 
-        cache_dir = getattr(settings, "DRIVER_CACHE_DIR", None)
-        if cache_dir:
-            # Do NOT set WDM_LOCAL=1 — that forces webdriver-manager to save
-            # under <project>/.wdm, which Flask's debug reloader sees as a
-            # source change and restarts the server mid-test.
-            os.environ.setdefault("WDM_CACHE_DIR", cache_dir)
+        # --- Cloud / container support ---------------------------------
+        # When deployed (Railway/Render/Fly via the Dockerfile), Chromium and
+        # its driver are installed as system packages. Point Selenium at them
+        # via env vars so we skip the webdriver-manager download entirely.
+        #   CHROME_BIN         -> chromium binary  (e.g. /usr/bin/chromium)
+        #   CHROMEDRIVER_PATH  -> chromedriver bin (e.g. /usr/bin/chromedriver)
+        chrome_bin = os.environ.get("CHROME_BIN") or os.environ.get("CHROMIUM_PATH")
+        if chrome_bin:
+            options.binary_location = chrome_bin
 
-        self.driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=options,
-        )
+        driver_path = os.environ.get("CHROMEDRIVER_PATH")
+        if driver_path:
+            # System driver is present — no download needed.
+            self.driver = webdriver.Chrome(
+                service=Service(executable_path=driver_path),
+                options=options,
+            )
+        else:
+            cache_dir = getattr(settings, "DRIVER_CACHE_DIR", None)
+            if cache_dir:
+                # Do NOT set WDM_LOCAL=1 — that forces webdriver-manager to save
+                # under <project>/.wdm, which Flask's debug reloader sees as a
+                # source change and restarts the server mid-test.
+                os.environ.setdefault("WDM_CACHE_DIR", cache_dir)
+            self.driver = webdriver.Chrome(
+                service=Service(ChromeDriverManager().install()),
+                options=options,
+            )
         self.driver.implicitly_wait(10)
         return self
 
