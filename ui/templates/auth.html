@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AbhiMate · Sign in</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>AbhiMate · AI QA Automation</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
     <script>
@@ -24,7 +25,34 @@
         <span class="aurora-blob aurora-3"></span>
     </div>
 
-    <main class="auth-shell">
+    <main class="auth-shell auth-split">
+        <section class="auth-hero">
+            <div class="auth-brand">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" aria-hidden="true">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                <span class="auth-brand-name">AbhiMate</span>
+            </div>
+
+            <p class="auth-eyebrow">Multi-Agent QA · AI-Powered</p>
+            <h1 class="auth-headline">Describe a feature.<br><em>Get a test suite.</em></h1>
+            <p class="auth-lede">
+                11 AI agents turn plain English into BDD test cases, run them in a real
+                browser, and explain every failure — in under a minute.
+            </p>
+
+            <ul class="auth-feature-list">
+                <li>BDD test cases in 5 categories, auto-generated</li>
+                <li>Runs in real Chrome — Selenium or Playwright</li>
+                <li>Visual regression, scheduling &amp; Slack alerts</li>
+                <li>Self-healing locators &amp; AI failure deep-dives</li>
+            </ul>
+
+            <p class="auth-hero-foot">© AbhiMate · AI Quality Engineering</p>
+        </section>
+
         <section class="auth-card glass-panel" data-tilt>
             <header class="auth-header">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" aria-hidden="true" class="auth-logo">
