@@ -17,6 +17,7 @@ primary_region = "bom"          # Mumbai — closest to India
   ABHIMATE_DEBUG = "false"
   ABHIMATE_BACKEND = "selenium"
   ABHIMATE_PUBLIC_URL = "https://abhimate.theabhinavsaxena.in"
+  ABHIMATE_DB_PATH = "/app/data/abhimate.db"
 
 [http_service]
   internal_port = 5000

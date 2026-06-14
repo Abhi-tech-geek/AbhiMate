@@ -26,10 +26,15 @@ ENV CHROME_BIN=/usr/bin/chromium \
 # --- Runtime config: headless + bind to all interfaces --------------------
 # These default the app for a server; override any of them in the host's
 # dashboard if needed.
+#
+# ABHIMATE_DB_PATH points the SQLite DB inside /app/data so a SINGLE mounted
+# volume at /app/data persists BOTH the database and the screenshots/traces
+# across redeploys (Railway allows only one volume per service).
 ENV ABHIMATE_HEADLESS=true \
     ABHIMATE_HOST=0.0.0.0 \
     ABHIMATE_DEBUG=false \
-    ABHIMATE_BACKEND=selenium
+    ABHIMATE_BACKEND=selenium \
+    ABHIMATE_DB_PATH=/app/data/abhimate.db
 
 WORKDIR /app
 

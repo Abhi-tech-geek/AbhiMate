@@ -21,7 +21,9 @@ services:
         value: "selenium"
       - key: ABHIMATE_PUBLIC_URL
         value: "https://abhimate.theabhinavsaxena.in"
+      - key: ABHIMATE_DB_PATH
+        value: "/app/data/abhimate.db"
     disk:
       name: abhimate-data
-      mountPath: /app/data
+      mountPath: /app/data       # single disk holds DB + screenshots + traces
       sizeGB: 1

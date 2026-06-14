@@ -62,22 +62,29 @@ git push origin main
 Project → "Variables" tab → ye add karo:
 
 ```
-GROQ_API_KEY          = gsk_xxxxxxxxxxxxxxxxxx   (apni nayi Groq key)
+GROQ_API_KEY          = gsk_xxxxxxxxxxxxxxxxxx   (apni Groq key)
 ABHIMATE_PUBLIC_URL   = https://abhimate.theabhinavsaxena.in
 ```
 
-(Baaki — HEADLESS, HOST, DEBUG, CHROME_BIN — Dockerfile mein already set hain.)
+(Baaki — HEADLESS, HOST, DEBUG, CHROME_BIN, ABHIMATE_DB_PATH — Dockerfile
+mein already set hain.)
 
 ## Step 4 — Persistent Storage (Important!)
 
-SQLite DB + screenshots ko deploy ke baad bachane ke liye volume attach karo:
+> **Railway limitation:** Ek service pe sirf **EK** volume attach hota hai.
+> Isliye DB ko bhi `/app/data` ke andar rakha hai (Dockerfile mein
+> `ABHIMATE_DB_PATH=/app/data/abhimate.db` set hai). Ek hi volume se DB +
+> screenshots + traces sab persist ho jate hain.
 
-1. Project → "Settings" → "Volumes" → "New Volume"
-2. Mount path: `/app/data`
-3. Ek aur volume DB ke liye: Mount path `/app/database`
-4. Save
+1. Service pe click karo (canvas mein "abhimate" box)
+2. "Settings" tab → niche scroll → **"Volumes"** section
+3. **"+ New Volume" / "Add Volume"** click karo
+4. Mount path: `/app/data`   ← bas yahi ek
+5. "Add" / "Deploy" click karo
 
 > Volume na lagaya toh har redeploy pe users + sessions reset ho jayenge.
+> Ek hi volume `/app/data` kaafi hai — alag se `/app/database` ki zaroorat
+> NAHI (DB ab data folder ke andar hai).
 
 ## Step 5 — Public URL Generate Karo
 
@@ -219,7 +226,8 @@ Portfolio ke saath demo ke liye **Railway** sabse simple hai.
 - Dashboard → Variables mein add kiya? Redeploy karo
 
 ## "Data reset after redeploy"
-- Volume attach nahi kiya. `/app/data` + `/app/database` pe volume mount karo
+- Volume attach nahi kiya. Ek volume `/app/data` pe mount karo (DB bhi usi
+  ke andar hai via ABHIMATE_DB_PATH)
 
 ## "Subdomain not working"
 - DNS propagate hone do (1 ghanta)
@@ -239,7 +247,7 @@ Portfolio ke saath demo ke liye **Railway** sabse simple hai.
 [ ] Repo connect kiya
 [ ] GROQ_API_KEY env var set kiya (NAYI key, purani rotate ki)
 [ ] ABHIMATE_PUBLIC_URL set kiya
-[ ] Volume attach kiya (/app/data + /app/database)
+[ ] Volume attach kiya (/app/data — ek hi kaafi hai)
 [ ] Railway URL pe test kiya — kaam kar raha hai?
 [ ] Custom domain abhimate.theabhinavsaxena.in add kiya
 [ ] DNS mein CNAME add kiya
@@ -259,7 +267,7 @@ git add . && git commit -m "deploy setup" && git push
 
 # 3. Variables: GROQ_API_KEY + ABHIMATE_PUBLIC_URL
 
-# 4. Volumes: /app/data + /app/database
+# 4. Volume: /app/data (ek hi — DB bhi isi ke andar)
 
 # 5. Settings → Networking → Custom Domain → abhimate.theabhinavsaxena.in
 

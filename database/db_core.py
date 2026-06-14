@@ -13,8 +13,13 @@ from typing import List, Dict, Any, Optional
 
 
 class SQLiteDB:
-    def __init__(self, db_path: str = "database/abhimate.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: str = None):
+        # In the cloud we point this at a mounted volume (e.g.
+        # /app/data/abhimate.db via ABHIMATE_DB_PATH) so the DB survives
+        # redeploys. Locally it falls back to the in-repo path.
+        self.db_path = db_path or os.environ.get(
+            "ABHIMATE_DB_PATH", "database/abhimate.db"
+        )
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_db()
         self._migrate()
