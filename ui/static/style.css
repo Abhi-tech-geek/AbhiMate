@@ -229,7 +229,20 @@ button:focus-visible, .chip:focus-visible, .btn:focus-visible,
 .welcome-state h1 { font-size: 2.2rem; margin-bottom: 8px;
     background: linear-gradient(90deg, #fff, var(--accent));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; }
-.welcome-state .subtitle { max-width: 600px; margin: 10px auto 30px; }
+.welcome-state .subtitle { max-width: 600px; margin: 10px auto 16px; }
+.welcome-hint {
+    max-width: 620px; margin: 0 auto 28px; padding: 10px 16px;
+    font-size: 0.85rem; line-height: 1.55;
+    color: var(--text-secondary);
+    background: var(--glass-bg, rgba(255,255,255,0.04));
+    border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+    border-radius: var(--radius-md, 10px);
+}
+.welcome-hint code {
+    font-family: var(--font-mono, monospace); font-size: 0.82em;
+    background: rgba(56,189,248,0.12); color: var(--accent);
+    padding: 1px 6px; border-radius: 5px;
+}
 .example-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
     max-width: 700px; margin: 0 auto; padding: 0 1rem; }
 .chip-label { color: var(--text-secondary); font-size: 0.85rem; align-self: center; margin-right: 4px; }

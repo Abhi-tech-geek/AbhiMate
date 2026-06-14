@@ -411,7 +411,7 @@ def smart_generate():
         if auto_run:
             start_t = time.time()
             executor_agent.mode = env
-            updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+            updated_cases, metrics = executor_agent.execute(session.test_cases, session_id, user_id=uid)
             end_t = time.time()
             
             # Post-Execution Advanced Analytics (RootCause & Performance)
@@ -448,7 +448,7 @@ def execute_session(session_id):
 
         start_t = time.time()
         executor_agent.mode = environment
-        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id, user_id=uid)
         end_t = time.time()
 
         for tc in updated_cases:
@@ -517,8 +517,8 @@ def execute_direct():
         memory_agent.save_session(session, user_id=uid)
         
         start_t = time.time()
-        executor_agent.mode = environment 
-        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id)
+        executor_agent.mode = environment
+        updated_cases, metrics = executor_agent.execute(session.test_cases, session_id, user_id=uid)
         end_t = time.time()
         
         for tc in updated_cases:

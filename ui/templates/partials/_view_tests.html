@@ -3,6 +3,12 @@
     <div id="welcomeState" class="welcome-state">
         <h1>Manual AI Test Generator</h1>
         <p class="subtitle">Enter a feature description or product URL. AI will build your BDD test suite in seconds.</p>
+        <p class="welcome-hint" role="note">
+            💡 Tests run headlessly on the server — no browser opens on your screen.
+            For live runs use automation-friendly sites like
+            <code>saucedemo.com</code> or <code>the-internet.herokuapp.com</code>.
+            Large sites (Amazon, Google) block automated browsers.
+        </p>
         <div class="example-chips" id="exampleChips">
             <span class="chip-label">Try:</span>
             <button class="chip" data-prompt="Reset password via email link with 15-minute token expiry">Password reset</button>
@@ -50,7 +56,7 @@
     <div class="input-area">
         <div class="input-box">
             <label for="featureInput" class="sr-only">Feature description or URL</label>
-            <textarea id="featureInput" placeholder="Describe feature (English/Hinglish) OR paste URL (e.g. https://amazon.in)" aria-label="Feature description"></textarea>
+            <textarea id="featureInput" placeholder="Describe feature (English/Hinglish) OR paste URL (e.g. https://saucedemo.com)" aria-label="Feature description"></textarea>
             <button id="generateBtn" class="send-btn" type="button" aria-label="Generate test cases">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <line x1="22" y1="2" x2="11" y2="13"></line>

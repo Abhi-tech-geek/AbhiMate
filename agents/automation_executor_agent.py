@@ -396,7 +396,20 @@ class AutomationExecutorAgent:
     # ------------------------------------------------------------------
     # Original synchronous entry — preserved for direct/legacy callers.
     # ------------------------------------------------------------------
-    def execute(self, test_cases: List[TestCase], session_id: str) -> Tuple[List[TestCase], ExecutionMetrics]:
+    def execute(
+        self,
+        test_cases: List[TestCase],
+        session_id: str,
+        device: Optional[str] = None,
+        user_id: Optional[int] = None,
+    ) -> Tuple[List[TestCase], ExecutionMetrics]:
+        """Synchronous run used by /api/execute and the auto-run pipeline.
+
+        Routes through the same Action Plan engine as ``execute_streaming``
+        (via ``_build_port_and_ctx`` + ``_execute_one_case``) so generated
+        ``action_plan`` cases actually run instead of being skipped for
+        lacking a legacy ``selenium_action`` snippet.
+        """
         # Honour user_skipped before Scenario-Outline expansion.
         runnable = [tc for tc in test_cases if not getattr(tc, "user_skipped", False)]
 
@@ -409,47 +422,32 @@ class AutomationExecutorAgent:
 
         metrics = ExecutionMetrics(total=len(test_cases))
 
-        if self.mode == "web":
-            driver_instance = WebSeleniumDriver()
-        else:
+        if self.mode != "web":
             raise NotImplementedError("Android/API not yet implemented.")
 
-        driver_instance.start()
-        context = driver_instance.get_context()
+        # Same BrowserPort selection as the streaming path.
+        try:
+            from config import settings
+            backend = getattr(settings, "BACKEND", "selenium")
+        except Exception:
+            backend = "selenium"
 
         out_dir = f"data/screenshots/{session_id}"
         os.makedirs(out_dir, exist_ok=True)
 
-        for tc in test_cases:
-            if not tc.selenium_action:
-                tc.status = "Skipped"
-                tc.error = "No executable action provided."
-                metrics.skipped += 1
-                continue
+        port, action_ctx = _build_port_and_ctx(
+            backend, user_id=user_id, session_id=session_id, device=device,
+        )
+        try:
+            for tc in test_cases:
+                started_at, logs = _execute_one_case(
+                    tc, port=port, action_ctx=action_ctx,
+                    session_id=session_id, out_dir=out_dir,
+                )
+                tc.trace_path = _write_trace(session_id, tc, started_at, time.time(), logs)
+                _apply_metric_delta(metrics, tc.status)
+        finally:
+            try: port.quit()
+            except Exception: pass
 
-            try:
-                safe_run(tc.selenium_action, context, timeout_seconds=PER_TEST_TIMEOUT_SECONDS)
-                tc.status = "Pass"
-                tc.error = None
-                metrics.passed += 1
-            except SandboxViolation as e:
-                tc.status = "Blocked"
-                tc.error = f"SandboxViolation: {e}"
-                metrics.skipped += 1
-            except TimeoutError as e:
-                tc.status = "Fail"
-                tc.error = f"Timeout: {e}"
-                metrics.failed += 1
-                ss_path = os.path.join(out_dir, f"failure_{tc.id}.png")
-                driver_instance.take_screenshot(ss_path)
-                tc.screenshot = ss_path
-            except Exception as e:
-                tc.status = "Fail"
-                tc.error = f"{type(e).__name__}: {str(e)}"
-                metrics.failed += 1
-                ss_path = os.path.join(out_dir, f"failure_{tc.id}.png")
-                driver_instance.take_screenshot(ss_path)
-                tc.screenshot = ss_path
-
-        driver_instance.quit()
         return test_cases, metrics
