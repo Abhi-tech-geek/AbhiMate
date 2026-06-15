@@ -55,6 +55,21 @@ def _qjs(value) -> str:
     return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
+# Selector builders kept as standalone f-strings (double quotes only in the
+# literal text, no backslashes in expression braces) so the module imports
+# cleanly on Python 3.11, which predates PEP 701's relaxed f-string rules.
+def _attr_sel(attr: str, val: str) -> str:
+    return f'[{attr}="{val}"]'
+
+
+def _xpath_contains(val: str) -> str:
+    return f'//*[contains(text(), "{val}")]'
+
+
+def _xpath_label(val: str) -> str:
+    return f'//label[contains(text(), "{val}")]'
+
+
 _KEY_MAP_SELENIUM = {
     "enter": "Keys.ENTER", "return": "Keys.ENTER", "tab": "Keys.TAB",
     "escape": "Keys.ESCAPE", "esc": "Keys.ESCAPE", "space": "Keys.SPACE",
@@ -74,7 +89,7 @@ def _pw_locator(loc: Optional["Locator"]) -> str:
     if by == "id":
         return f"page.locator({_qpy('#' + val)})"
     if by == "name":
-        return f"page.locator({_qpy(f'[name=\"{val}\"]')})"
+        return f"page.locator({_qpy(_attr_sel('name', val))})"
     if by == "css":
         return f"page.locator({_qpy(val)})"
     if by == "xpath":
@@ -184,19 +199,19 @@ def _se_by(loc: Optional["Locator"]) -> str:
     if by == "xpath":
         return f"By.XPATH, {_qpy(val)}"
     if by == "text":
-        return f"By.XPATH, {_qpy(f'//*[contains(text(), \"{val}\")]')}"
+        return f"By.XPATH, {_qpy(_xpath_contains(val))}"
     if by == "testid":
-        return f"By.CSS_SELECTOR, {_qpy(f'[data-testid=\"{val}\"]')}"
+        return f"By.CSS_SELECTOR, {_qpy(_attr_sel('data-testid', val))}"
     if by == "placeholder":
-        return f"By.CSS_SELECTOR, {_qpy(f'[placeholder=\"{val}\"]')}"
+        return f"By.CSS_SELECTOR, {_qpy(_attr_sel('placeholder', val))}"
     if by == "role":
-        return f"By.CSS_SELECTOR, {_qpy(f'[role=\"{val}\"]')}"
+        return f"By.CSS_SELECTOR, {_qpy(_attr_sel('role', val))}"
     if by == "link_text":
         return f"By.LINK_TEXT, {_qpy(val)}"
     if by == "partial_link_text":
         return f"By.PARTIAL_LINK_TEXT, {_qpy(val)}"
     if by == "label":
-        return f"By.XPATH, {_qpy(f'//label[contains(text(), \"{val}\")]')}"
+        return f"By.XPATH, {_qpy(_xpath_label(val))}"
     return f"By.CSS_SELECTOR, {_qpy(val)}"
 
 
@@ -298,17 +313,17 @@ def _cy_locator(loc: Optional["Locator"]) -> str:
     if by == "id":
         return f"cy.get({_qjs('#' + val)})"
     if by == "name":
-        return f"cy.get({_qjs(f'[name=\"{val}\"]')})"
+        return f"cy.get({_qjs(_attr_sel('name', val))})"
     if by == "css":
         return f"cy.get({_qjs(val)})"
     if by == "text":
         return f"cy.contains({_qjs(val)})"
     if by == "testid":
-        return f"cy.get({_qjs(f'[data-testid=\"{val}\"]')})"
+        return f"cy.get({_qjs(_attr_sel('data-testid', val))})"
     if by == "placeholder":
-        return f"cy.get({_qjs(f'[placeholder=\"{val}\"]')})"
+        return f"cy.get({_qjs(_attr_sel('placeholder', val))})"
     if by == "role":
-        return f"cy.get({_qjs(f'[role=\"{val}\"]')})"
+        return f"cy.get({_qjs(_attr_sel('role', val))})"
     if by in ("link_text", "partial_link_text"):
         return f"cy.contains('a', {_qjs(val)})"
     if by == "xpath":
