@@ -16,20 +16,33 @@ async function loadSessions() {
         const res = await fetch('/api/sessions');
         if (res.status === 401) { window.location.href = '/login'; return; }
         const payload = await res.json();
-        // New shape: {sessions, quota}. Legacy shape: bare array.
+        // New shape: {sessions, quota, error}. Legacy shape: bare array.
         if (Array.isArray(payload)) {
             window.__sessions = payload;
             window.__quota = null;
         } else {
             window.__sessions = payload.sessions || [];
             window.__quota = payload.quota || null;
+            // Server now decouples list + quota and reports a partial error
+            // instead of silently returning an empty list. Surface it.
+            if (payload.error) {
+                console.error('Session load error:', payload.error);
+                const empty = document.getElementById('sessionEmpty');
+                if (empty) empty.textContent = 'Could not load sessions. Try Refresh.';
+                if (typeof showToast === 'function') showToast(payload.error, 'error');
+            }
         }
         renderSessionList();
         renderQuota();
     } catch (err) {
         console.error("Failed to load sessions:", err);
+        const empty = document.getElementById('sessionEmpty');
+        if (empty) empty.textContent = 'Network error loading sessions. Try Refresh.';
     }
 }
+
+// Expose a manual refresh so users aren't stuck if a load hiccups.
+window.refreshSessions = loadSessions;
 
 function renderQuota() {
     const q = window.__quota;
@@ -140,6 +153,17 @@ function wireSidebarTools() {
             renderSessionList();
         });
     });
+    const refreshBtn = document.getElementById('refreshSessionsBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            refreshBtn.classList.add('spinning');
+            const empty = document.getElementById('sessionEmpty');
+            if (empty) empty.textContent = 'No sessions match.';
+            Promise.resolve(loadSessions()).finally(() => {
+                setTimeout(() => refreshBtn.classList.remove('spinning'), 400);
+            });
+        });
+    }
 }
 
 async function loadGlobalInsights() {

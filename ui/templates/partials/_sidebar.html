@@ -23,7 +23,11 @@
                     <button class="filter-chip" data-filter="executed" type="button" aria-pressed="false">Run</button>
                 </div>
             </div>
-            <h4 class="sidebar-title">Session History</h4>
+            <div class="sidebar-title-row">
+                <h4 class="sidebar-title">Session History</h4>
+                <button id="refreshSessionsBtn" class="sidebar-refresh-btn" type="button"
+                        title="Refresh session list" aria-label="Refresh session list">⟳</button>
+            </div>
             <ul id="sessionList" class="session-list" aria-label="Session list"></ul>
             <p id="sessionEmpty" class="sidebar-empty hidden">No sessions match.</p>
         </div>

@@ -256,12 +256,24 @@ def serve_screenshot(subpath):
 @app.route("/api/sessions", methods=["GET"])
 @login_required
 def get_sessions():
+    # List and quota are computed independently so a failure in one never
+    # blanks the other (that produced the confusing "4/5 but no sessions"
+    # state). Real exceptions are logged so they surface in server logs.
+    import traceback
+    uid = current_user_id()
+    sessions, quota, err = [], None, None
     try:
-        sessions = memory_agent.list_all_sessions(user_id=current_user_id())
-        quota = memory_agent.quota_info(current_user_id())
-        return jsonify({"sessions": sessions, "quota": quota})
+        sessions = memory_agent.list_all_sessions(user_id=uid)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        traceback.print_exc()
+        err = f"Could not load session list: {e}"
+    try:
+        quota = memory_agent.quota_info(uid)
+    except Exception as e:
+        traceback.print_exc()
+        if not err:
+            err = f"Could not load quota: {e}"
+    return jsonify({"sessions": sessions, "quota": quota, "error": err})
 
 @app.route("/api/sessions/<session_id>", methods=["GET"])
 @login_required
