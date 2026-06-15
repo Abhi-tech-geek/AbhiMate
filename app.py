@@ -1275,6 +1275,35 @@ def export_session_markdown(session_id):
     )
 
 
+@app.route("/api/sessions/<session_id>/export.code", methods=["GET"])
+@login_required
+def export_session_code(session_id):
+    """Render the session's Action Plans as a runnable test file.
+
+    Query param ``framework`` = playwright | selenium | cypress.
+    """
+    framework = (request.args.get("framework") or "playwright").strip().lower()
+    try:
+        session = memory_agent.load_session(session_id, user_id=current_user_id())
+    except NotOwner as e:
+        return jsonify({"error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"error": str(e)}), 404
+
+    from utils.code_export import generate_code, filename_for
+    try:
+        code = generate_code(session, framework)
+    except ValueError as e:
+        return jsonify({"error": str(e), "code": "bad_framework"}), 400
+
+    filename = filename_for(session, framework)
+    return Response(
+        code,
+        mimetype="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @app.route("/api/runs/diff", methods=["GET"])
 @login_required
 def diff_runs():

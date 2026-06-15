@@ -1053,6 +1053,37 @@ function updateExportButton() {
         a.setAttribute('download', '');
         a.textContent = '⬇ Export .md';
         host.appendChild(a);
+
+        // Feature #1 — export as runnable test code (Playwright/Selenium/Cypress)
+        const codeWrap = document.createElement('div');
+        codeWrap.className = 'code-export';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'export-btn';
+        btn.textContent = '⬇ Export code ▾';
+        const menu = document.createElement('div');
+        menu.className = 'code-export-menu hidden';
+        const frameworks = [
+            ['playwright', 'Playwright (Python)'],
+            ['selenium', 'Selenium + pytest'],
+            ['cypress', 'Cypress (JS)'],
+        ];
+        frameworks.forEach(([fw, label]) => {
+            const link = document.createElement('a');
+            link.href = `/api/sessions/${currentSessionId}/export.code?framework=${fw}`;
+            link.setAttribute('download', '');
+            link.textContent = label;
+            link.addEventListener('click', () => menu.classList.add('hidden'));
+            menu.appendChild(link);
+        });
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => menu.classList.add('hidden'));
+        codeWrap.appendChild(btn);
+        codeWrap.appendChild(menu);
+        host.appendChild(codeWrap);
     }
 }
 

@@ -924,6 +924,26 @@ button:focus-visible, .chip:focus-visible, .btn:focus-visible,
     text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .export-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Feature #1 — export-as-code dropdown */
+.code-export { position: relative; display: inline-block; }
+.code-export-menu {
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 30;
+    min-width: 190px;
+    background: var(--bg-darker, #0b1220);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 4px;
+    box-shadow: var(--shadow-2, 0 12px 30px rgba(0,0,0,0.45));
+    display: flex; flex-direction: column; gap: 2px;
+}
+.code-export-menu.hidden { display: none; }
+.code-export-menu a {
+    padding: 8px 12px; border-radius: var(--radius-sm, 6px);
+    color: var(--text-primary); text-decoration: none;
+    font-size: var(--font-sm); white-space: nowrap;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.code-export-menu a:hover { background: rgba(56,189,248,0.12); color: var(--accent); }
+
 /* ============================================================
    PHASE C — user chip + quota row
    ============================================================ */
