@@ -1278,3 +1278,47 @@ body { background: var(--bg-dark); }
     .view-panel.active-view { animation: none; }
     .primary-btn:not(:disabled):not(:hover) { animation: none; }
 }
+
+/* ============================================================
+   Guided tour ("demo") — spotlight coach-marks per tab
+   ============================================================ */
+.tour-overlay {
+    position: fixed; inset: 0; z-index: 4000;
+    display: none;
+}
+.tour-overlay.visible { display: block; }
+.tour-spot {
+    position: fixed; border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.72);
+    border: 2px solid var(--accent, #38bdf8);
+    transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease;
+    pointer-events: none;
+}
+.tour-tip {
+    position: fixed; z-index: 4001;
+    background: var(--bg-darker, #0b1220);
+    border: 1px solid var(--glass-border, rgba(255,255,255,0.12));
+    border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+    color: var(--text-primary, #e5e7eb);
+}
+.tour-tip-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; color: var(--accent, #38bdf8); }
+.tour-tip-text { font-size: 0.88rem; line-height: 1.55; color: var(--text-secondary, #9ca3af); margin: 0 0 14px; }
+.tour-tip-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tour-tip-count { font-size: 0.75rem; color: var(--text-secondary, #9ca3af); }
+.tour-tip-btns { display: flex; gap: 8px; }
+.tour-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: 1px solid transparent;
+    transition: background .15s ease, transform .15s ease;
+}
+.tour-btn-ghost { background: transparent; border-color: var(--glass-border, rgba(255,255,255,0.14)); color: var(--text-secondary, #9ca3af); }
+.tour-btn-ghost:hover { color: var(--text-primary, #e5e7eb); }
+.tour-btn-primary {
+    background: linear-gradient(120deg, var(--accent, #38bdf8), #2563eb);
+    color: #fff; box-shadow: 0 6px 16px rgba(56,189,248,0.35);
+}
+.tour-btn-primary:hover { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) {
+    .tour-spot { transition: none; }
+}
