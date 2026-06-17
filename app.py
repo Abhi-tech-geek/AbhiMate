@@ -118,6 +118,53 @@ def auth_logout():
     return jsonify({"status": "logged_out"})
 
 
+# ----- Live demo: one-click read-only guest session --------------------
+_DEMO_UID_CACHE = {"id": None}
+
+
+def current_user_is_demo() -> bool:
+    """True when the logged-in user is the shared read-only demo account.
+
+    Write/LLM/execution endpoints use this to stay free for everyone and to
+    keep the showcase data pristine.
+    """
+    from utils.demo_seed import DEMO_EMAIL
+    uid = current_user_id()
+    if uid is None:
+        return False
+    if _DEMO_UID_CACHE["id"] is not None:
+        return uid == _DEMO_UID_CACHE["id"]
+    try:
+        u = memory_agent.db.get_user_by_id(uid)
+        return bool(u and (u.get("email") or "").lower() == DEMO_EMAIL)
+    except Exception:
+        return False
+
+
+def _demo_guard():
+    """Return a 403 JSON response if the current user is the demo account."""
+    if current_user_is_demo():
+        return jsonify({
+            "error": "This is the read-only live demo. Sign up free to generate "
+                     "and run your own tests.",
+            "code": "demo_readonly",
+        }), 403
+    return None
+
+
+@app.route("/api/auth/demo", methods=["POST"])
+def auth_demo():
+    """Log the visitor into the shared, pre-seeded demo account."""
+    from utils.demo_seed import ensure_demo
+    try:
+        uid = ensure_demo(memory_agent, hash_password)
+    except Exception as e:
+        return jsonify({"error": f"Could not start demo: {e}"}), 500
+    _DEMO_UID_CACHE["id"] = uid
+    set_session_user(uid)
+    return jsonify({"id": uid, "demo": True})
+
+
 # LLM-config errors anywhere in the request should surface as a friendly JSON
 # response with a hint, not a 500 with a stack trace.
 @app.errorhandler(LLMConfigError)
@@ -289,6 +336,9 @@ def get_session(session_id):
 @app.route("/api/sessions/<session_id>", methods=["DELETE"])
 @login_required
 def delete_session(session_id):
+    _g = _demo_guard()
+    if _g:
+        return _g
     try:
         memory_agent.delete_session(session_id, user_id=current_user_id())
         return jsonify({"status": "deleted", "quota": memory_agent.quota_info(current_user_id())})
@@ -341,6 +391,9 @@ def get_global_insights():
 @app.route("/api/smart_input", methods=["POST"])
 @login_required
 def smart_generate():
+    _g = _demo_guard()
+    if _g:
+        return _g
     data = request.json
     raw_prompt = data.get("prompt", "")
     auto_run = data.get("autoRun", False)
@@ -451,6 +504,9 @@ def smart_generate():
 @login_required
 def execute_session(session_id):
     """Executes a previously Generated session (For Manual Approvals)"""
+    _g = _demo_guard()
+    if _g:
+        return _g
     uid = current_user_id()
     environment = request.json.get("environment", "web")
     try:
@@ -488,6 +544,9 @@ def execute_session(session_id):
 @app.route("/api/execute_direct", methods=["POST"])
 @login_required
 def execute_direct():
+    _g = _demo_guard()
+    if _g:
+        return _g
     uid = current_user_id()
     quota = memory_agent.quota_info(uid)
     if quota["at_limit"]:
@@ -595,6 +654,9 @@ def _unregister_run(run_id: str) -> None:
 @login_required
 def execute_stream(session_id):
     """SSE endpoint that yields per-case lifecycle events as the executor runs."""
+    _g = _demo_guard()
+    if _g:
+        return _g
     uid = current_user_id()
     body = request.json or {}
     environment = body.get("environment", "web")
@@ -764,6 +826,9 @@ def smart_input_image():
       • application/json with ``image_b64`` + ``mime_type`` + ``count`` + ``hint``
     """
     import base64
+    _g = _demo_guard()
+    if _g:
+        return _g
     uid = current_user_id()
 
     # ---- Quota gate (fail fast before vision-token spend) ----
@@ -926,6 +991,9 @@ MAX_RECORDING_BYTES = 512 * 1024  # 512 KB is plenty for ~200 action-plan ops
 @login_required
 def import_recording_endpoint():
     """Accept a recording JSON from the Chrome extension and persist as a session."""
+    _g = _demo_guard()
+    if _g:
+        return _g
     uid = current_user_id()
     # Read the raw bytes ONCE, size-check, then parse — get_data() with the
     # default cache=True lets a subsequent get_json() still see the body,
@@ -1088,6 +1156,9 @@ def toggle_schedule(schedule_id):
 @login_required
 def create_ticket(session_id, case_id):
     """Push a failed case to JIRA or Linear as a new issue."""
+    _g = _demo_guard()
+    if _g:
+        return _g
     uid = current_user_id()
     data = request.json or {}
     provider = (data.get("provider") or "").lower().strip()

@@ -78,4 +78,27 @@
                    document.getElementById('signupError'),
                    formSignup.querySelector('.auth-submit'));
     });
+
+    // One-click live demo — read-only guest account, no signup.
+    const demoBtn = document.getElementById('demoBtn');
+    if (demoBtn) {
+        demoBtn.addEventListener('click', async () => {
+            demoBtn.disabled = true;
+            const spin = document.getElementById('demoSpinner');
+            const txt = demoBtn.querySelector('.auth-demo-text');
+            if (spin) spin.classList.remove('hidden');
+            if (txt) txt.textContent = 'Loading demo…';
+            try {
+                const res = await fetch('/api/auth/demo', { method: 'POST' });
+                if (!res.ok) throw new Error('Demo unavailable. Try again.');
+                window.location.href = '/';
+            } catch (e) {
+                demoBtn.disabled = false;
+                if (spin) spin.classList.add('hidden');
+                if (txt) txt.textContent = '🎬 Try the live demo';
+                const err = document.getElementById('loginError');
+                if (err) err.textContent = e.message;
+            }
+        });
+    }
 })();
